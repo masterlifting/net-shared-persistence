@@ -1,4 +1,4 @@
-﻿namespace Shared.Persistence.Settings.Connections;
+﻿namespace Net.Shared.Persistence.Settings.Connections;
 
 public sealed record PostgreSQLConnectionSettings
 {

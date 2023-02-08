@@ -1,7 +1,7 @@
 ﻿using Shared.Exceptions.Abstractions;
 using Shared.Exceptions.Models;
 
-namespace Shared.Persistence.Exceptions;
+namespace Net.Shared.Persistence.Exceptions;
 
 public sealed class SharedPersistenceException : SharedException
 {

@@ -1,7 +1,8 @@
 ﻿using System.Linq.Expressions;
-using Shared.Persistence.Abstractions.Entities;
 
-namespace Shared.Persistence.Abstractions.Contexts
+using Net.Shared.Persistence.Abstractions.Entities;
+
+namespace Net.Shared.Persistence.Abstractions.Contexts
 {
     public interface IPersistenceContext<TEntity> : IDisposable where TEntity : IPersistent
     {

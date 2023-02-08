@@ -1,14 +1,15 @@
 ﻿using System.Linq.Expressions;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Shared.Persistence.Abstractions.Contexts;
-using Shared.Persistence.Abstractions.Entities;
-using Shared.Persistence.Settings.Connections;
+using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Settings.Connections;
 
 using SharpCompress.Common;
 
-namespace Shared.Persistence.Contexts;
+namespace Net.Shared.Persistence.Contexts;
 
 public abstract class PostgreContext : DbContext, IPostgrePersistenceContext
 {

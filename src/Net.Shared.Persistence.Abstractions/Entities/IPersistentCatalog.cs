@@ -1,4 +1,4 @@
-﻿namespace Shared.Persistence.Abstractions.Entities;
+﻿namespace Net.Shared.Persistence.Abstractions.Entities;
 
 public interface IPersistentCatalog : IPersistent
 {

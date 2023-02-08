@@ -1,10 +1,10 @@
 ﻿using System.Linq.Expressions;
 
-using Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Entities;
 
-using static Shared.Persistence.Abstractions.Constants.Enums;
+using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
-namespace Shared.Persistence.Abstractions.Contexts
+namespace Net.Shared.Persistence.Abstractions.Contexts
 {
     public interface IMongoPersistenceContext : IPersistenceContext<IPersistentNoSql>
     {

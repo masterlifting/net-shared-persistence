@@ -1,20 +1,23 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Net.Shared.Persistence;
+
+using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Repositories;
+using Net.Shared.Persistence.Abstractions.Repositories.Parts;
+
 using Shared.Extensions.Logging;
 using Shared.Models.Results;
-using Shared.Persistence.Abstractions.Contexts;
-using Shared.Persistence.Abstractions.Entities;
-using Shared.Persistence.Abstractions.Entities.Catalogs;
-using Shared.Persistence.Abstractions.Repositories;
-using Shared.Persistence.Abstractions.Repositories.Parts;
 using Shared.Persistence.Exceptions;
 
 using System.Linq.Expressions;
 
-using static Shared.Persistence.Abstractions.Constants.Enums;
+using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
-namespace Shared.Persistence.Repositories;
+namespace Net.Shared.Persistence.Repositories;
 
 public abstract class PostgreRepository<TEntity> : IPersistenceSqlRepository<TEntity>
     where TEntity : class, IPersistentSql

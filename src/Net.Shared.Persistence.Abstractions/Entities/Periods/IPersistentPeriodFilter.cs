@@ -1,6 +1,8 @@
-﻿using System.Linq.Expressions;
+﻿using Net.Shared.Persistence.Abstractions.Entities;
 
-namespace Shared.Persistence.Abstractions.Entities.Periods;
+using System.Linq.Expressions;
+
+namespace Net.Shared.Persistence.Abstractions.Entities.Periods;
 
 public interface IPersistentPeriodFilter<T> where T : class, IPersistentPeriod, IPersistent
 {

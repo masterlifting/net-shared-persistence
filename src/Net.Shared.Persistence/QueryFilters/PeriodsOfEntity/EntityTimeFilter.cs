@@ -1,11 +1,11 @@
-﻿using Shared.Persistence.Abstractions.Entities;
-using Shared.Persistence.Abstractions.Entities.Periods;
+﻿using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Entities.Periods;
 
 using System.Linq.Expressions;
 
-using static Shared.Persistence.Constants.Enums;
+using static Net.Shared.Persistence.Constants.Enums;
 
-namespace Shared.Persistence.QueryFilters.PeriodsOfEntity;
+namespace Net.Shared.Persistence.QueryFilters.PeriodsOfEntity;
 
 public sealed class EntityTimeFilter<T> : IPersistentPeriodFilter<T> where T : class, IPersistentTime, IPersistent
 {

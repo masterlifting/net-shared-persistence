@@ -2,16 +2,17 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-using Shared.Persistence.Abstractions.Contexts;
-using Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Settings.Connections;
+
 using Shared.Persistence.Exceptions;
-using Shared.Persistence.Settings.Connections;
 
 using System.Linq.Expressions;
 
-using static Shared.Persistence.Abstractions.Constants.Enums;
+using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
-namespace Shared.Persistence.Contexts;
+namespace Net.Shared.Persistence.Contexts;
 
 public abstract class MongoContext : IMongoPersistenceContext
 {
@@ -72,7 +73,7 @@ public abstract class MongoContext : IMongoPersistenceContext
         var result = await GetCollection<T>().UpdateManyAsync<T>(condition, updateRules, null, cToken);
 
 
-       return Array.Empty<T>();
+        return Array.Empty<T>();
     }
     public async Task<T[]> DeleteAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
@@ -80,7 +81,7 @@ public abstract class MongoContext : IMongoPersistenceContext
 
         var result = await collection.DeleteManyAsync<T>(condition, null, cToken);
 
-        return Array.Empty<T>();   
+        return Array.Empty<T>();
     }
 
     public async Task StartTransactionAsync(CancellationToken cToken = default)

@@ -2,21 +2,22 @@
 
 using MongoDB.Driver;
 
+using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Repositories.Parts;
+
 using Shared.Extensions.Logging;
 using Shared.Models.Results;
-using Shared.Persistence.Abstractions.Contexts;
-using Shared.Persistence.Abstractions.Entities;
-using Shared.Persistence.Abstractions.Entities.Catalogs;
-using Shared.Persistence.Abstractions.Repositories;
-using Shared.Persistence.Abstractions.Repositories.Parts;
 using Shared.Persistence.Exceptions;
 
 using System.Linq.Expressions;
 
-using static Shared.Persistence.Abstractions.Constants.Enums;
-using static Shared.Persistence.Constants.Enums;
+using static Net.Shared.Persistence.Abstractions.Constants.Enums;
+using static Net.Shared.Persistence.Constants.Enums;
+using Net.Shared.Persistence.Abstractions.Repositories;
 
-namespace Shared.Persistence.Repositories;
+namespace Net.Shared.Persistence.Repositories;
 
 public abstract class MongoRepository<TEntity> : IPersistenceNoSqlRepository<TEntity> where TEntity : class, IPersistentNoSql
 {
@@ -77,8 +78,8 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
     {
         Expression<Func<T, bool>> condition = x =>
             x.ProcessStepId == step.Id
-            && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || (x.ProcessStatusId == (int)ProcessStatuses.Error))
-            && (x.ProcessAttempt < maxAttempts);
+            && (x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime || x.ProcessStatusId == (int)ProcessStatuses.Error)
+            && x.ProcessAttempt < maxAttempts;
 
         var updater = new Dictionary<ContextCommand, (string Name, object Value)>
         {

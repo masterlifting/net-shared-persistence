@@ -1,8 +1,8 @@
 ﻿using System.Linq.Expressions;
 
-using Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Entities;
 
-namespace Shared.Persistence.Abstractions.Contexts
+namespace Net.Shared.Persistence.Abstractions.Contexts
 {
     public interface IPostgrePersistenceContext : IPersistenceContext<IPersistentSql>
     {

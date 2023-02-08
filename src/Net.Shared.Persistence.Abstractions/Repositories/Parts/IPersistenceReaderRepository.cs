@@ -1,9 +1,9 @@
-﻿using Shared.Persistence.Abstractions.Entities;
-using Shared.Persistence.Abstractions.Entities.Catalogs;
+﻿using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 
 using System.Linq.Expressions;
 
-namespace Shared.Persistence.Abstractions.Repositories.Parts
+namespace Net.Shared.Persistence.Abstractions.Repositories.Parts
 {
     public interface IPersistenceReaderRepository<TEntity> where TEntity : IPersistent
     {
