@@ -11,7 +11,7 @@ using SharpCompress.Common;
 
 namespace Net.Shared.Persistence.Contexts;
 
-public abstract class PostgreContext : DbContext, IPostgrePersistenceContext
+public abstract class PostgreContext : DbContext, IPersistencePostgreContext
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly PostgreSQLConnectionSettings _connectionSettings;

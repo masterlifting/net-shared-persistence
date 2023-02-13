@@ -1,6 +1,4 @@
-﻿using Net.Shared.Persistence.Abstractions.Entities;
-
-namespace Net.Shared.Persistence.Abstractions.Entities.Catalogs;
+﻿namespace Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 
 public abstract class PersistentCatalog : IPersistentCatalog
 {

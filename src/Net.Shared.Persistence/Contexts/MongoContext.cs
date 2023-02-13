@@ -14,7 +14,7 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Contexts;
 
-public abstract class MongoContext : IMongoPersistenceContext
+public abstract class MongoContext : IPersistenceMongoContext
 {
     private readonly IMongoDatabase _dataBase;
     private readonly MongoClient _client;

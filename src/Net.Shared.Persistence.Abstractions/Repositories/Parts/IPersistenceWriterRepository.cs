@@ -1,7 +1,6 @@
-﻿using Net.Shared.Persistence.Abstractions.Entities;
+﻿using Net.Shared.Models.Results;
+using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
-
-using Shared.Models.Results;
 
 using System.Linq.Expressions;
 

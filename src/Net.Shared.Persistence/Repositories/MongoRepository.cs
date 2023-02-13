@@ -27,7 +27,7 @@ public abstract class MongoRepository<TEntity> : IPersistenceNoSqlRepository<TEn
     public IPersistenceReaderRepository<TEntity> Reader { get => _reader.Value; }
     public IPersistenceWriterRepository<TEntity> Writer { get => _writer.Value; }
 
-    protected MongoRepository(ILogger<TEntity> logger, IMongoPersistenceContext context)
+    protected MongoRepository(ILogger<TEntity> logger, IPersistenceMongoContext context)
     {
         var objectId = base.GetHashCode();
         var initiator = $"Mongo repository of '{typeof(TEntity).Name}' by Id {objectId}";
@@ -38,8 +38,8 @@ public abstract class MongoRepository<TEntity> : IPersistenceNoSqlRepository<TEn
 }
 internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : IPersistentNoSql
 {
-    private readonly IMongoPersistenceContext _context;
-    public MongoReaderRepository(IMongoPersistenceContext context) => _context = context;
+    private readonly IPersistenceMongoContext _context;
+    public MongoReaderRepository(IPersistenceMongoContext context) => _context = context;
 
     public Task<T?> FindSingleAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
         _context.FindSingleAsync(condition, cToken);
@@ -94,10 +94,10 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
 internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : IPersistentNoSql
 {
     private readonly ILogger _logger;
-    private readonly IMongoPersistenceContext _context;
+    private readonly IPersistenceMongoContext _context;
     private readonly string _initiator;
 
-    public MongoWriterRepository(ILogger logger, IMongoPersistenceContext context, string initiator)
+    public MongoWriterRepository(ILogger logger, IPersistenceMongoContext context, string initiator)
     {
         _logger = logger;
         _context = context;

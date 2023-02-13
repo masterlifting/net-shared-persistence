@@ -28,7 +28,7 @@ public abstract class PostgreRepository<TEntity> : IPersistenceSqlRepository<TEn
     public IPersistenceReaderRepository<TEntity> Reader { get => _reader.Value; }
     public IPersistenceWriterRepository<TEntity> Writer { get => _writer.Value; }
 
-    protected PostgreRepository(ILogger<TEntity> logger, IPostgrePersistenceContext context)
+    protected PostgreRepository(ILogger<TEntity> logger, IPersistencePostgreContext context)
     {
         var objectId = base.GetHashCode();
         var initiator = $"Postgre repository of '{typeof(TEntity).Name}' by Id {objectId}";
@@ -39,8 +39,8 @@ public abstract class PostgreRepository<TEntity> : IPersistenceSqlRepository<TEn
 }
 internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : IPersistentSql
 {
-    private readonly IPostgrePersistenceContext _context;
-    public PostgreReaderRepository(IPostgrePersistenceContext context) => _context = context;
+    private readonly IPersistencePostgreContext _context;
+    public PostgreReaderRepository(IPersistencePostgreContext context) => _context = context;
 
     public Task<T?> FindSingleAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
         _context.FindSingleAsync(condition, cToken);
@@ -112,10 +112,10 @@ internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepos
 internal sealed class PostgreWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : IPersistentSql
 {
     private readonly ILogger _logger;
-    private readonly IPostgrePersistenceContext _context;
+    private readonly IPersistencePostgreContext _context;
     private readonly string _initiator;
 
-    public PostgreWriterRepository(ILogger logger, IPostgrePersistenceContext context, string initiator)
+    public PostgreWriterRepository(ILogger logger, IPersistencePostgreContext context, string initiator)
     {
         _logger = logger;
         _context = context;
