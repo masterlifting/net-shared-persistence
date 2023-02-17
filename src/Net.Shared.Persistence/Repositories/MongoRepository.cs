@@ -110,7 +110,7 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
 
         _logger.LogTrace(_initiator, typeof(T).Name + ' ' + Constants.Actions.Created, Constants.Actions.Success);
     }
-    public async Task CreateRangeAsync<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
+    public async Task CreateManyAsync<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
     {
         if (!entities.Any())
         {
@@ -138,7 +138,7 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
     {
         try
         {
-            await CreateRangeAsync(entities, cToken);
+            await CreateManyAsync(entities, cToken);
             return new TryResult<T[]>(entities.ToArray());
         }
         catch (Exception exception)
