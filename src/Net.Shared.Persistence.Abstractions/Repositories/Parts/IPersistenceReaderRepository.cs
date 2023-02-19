@@ -17,7 +17,7 @@ namespace Net.Shared.Persistence.Abstractions.Repositories.Parts
         Task<T?> GetCatalogByIdAsync<T>(int id, CancellationToken cToken = default) where T : class, TEntity, IPersistentCatalog;
         Task<T?> GetCatalogByNameAsync<T>(string name, CancellationToken cToken = default) where T : class, TEntity, IPersistentCatalog;
 
-        Task<T[]> GetProcessableAsync<T>(IProcessStep step, int limit, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess;
-        Task<T[]> GetUnprocessableAsync<T>(IProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess;
+        Task<T[]> GetProcessableAsync<T>(IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess;
+        Task<T[]> GetUnprocessableAsync<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess;
     }
 }

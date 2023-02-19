@@ -1,5 +1,5 @@
 ﻿namespace Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 
-public interface IProcessStatus : IPersistentCatalog
+public interface IPersistentProcessStep : IPersistentCatalog
 {
 }

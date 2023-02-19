@@ -2,7 +2,7 @@
 
 using Net.Shared.Persistence.Abstractions.Entities;
 
-using static Net.Shared.Persistence.Abstractions.Constants.Enums;
+using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Abstractions.Contexts
 {

@@ -1,21 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Net.Shared.Persistence;
-
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Abstractions.Repositories.Parts;
 
-using Shared.Extensions.Logging;
-using Shared.Models.Results;
-using Shared.Persistence.Exceptions;
-
 using System.Linq.Expressions;
 
-using static Net.Shared.Persistence.Abstractions.Constants.Enums;
+using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories;
 
@@ -60,7 +54,7 @@ internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepos
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByNameAsync<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
             Task.Run(() => _context.Set<T>().ToDictionary(x => x.Name));
 
-    public async Task<T[]> GetProcessableAsync<T>(IProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task<T[]> GetProcessableAsync<T>(IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         var tableName = _context.Model.FindEntityType(typeof(T))?.ShortName()
            ?? throw new SharedPersistenceException(typeof(T).Name, "Searching a table name", new("Table name not found"));
@@ -82,7 +76,7 @@ internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepos
 
         return await _context.Set<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
     }
-    public async Task<T[]> GetUnprocessableAsync<T>(IProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task<T[]> GetUnprocessableAsync<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         var tableName = _context.Model.FindEntityType(typeof(T))?.ShortName()
            ?? throw new SharedPersistenceException(typeof(T).Name, "Searching a table name", new("Table name not found"));
@@ -210,7 +204,7 @@ internal sealed class PostgreWriterRepository<TEntity> : IPersistenceWriterRepos
         }
     }
 
-    public async Task SaveProcessableAsync<T>(IProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task SaveProcessableAsync<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         try
         {

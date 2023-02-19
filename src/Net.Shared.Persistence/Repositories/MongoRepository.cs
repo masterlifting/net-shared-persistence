@@ -7,14 +7,9 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories.Parts;
 
-using Shared.Extensions.Logging;
-using Shared.Models.Results;
-using Shared.Persistence.Exceptions;
-
 using System.Linq.Expressions;
 
-using static Net.Shared.Persistence.Abstractions.Constants.Enums;
-using static Net.Shared.Persistence.Constants.Enums;
+using static Net.Shared.Persistence.Models.Constants.Enums;
 using Net.Shared.Persistence.Abstractions.Repositories;
 
 namespace Net.Shared.Persistence.Repositories;
@@ -59,7 +54,7 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByNameAsync<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
             Task.Run(() => _context.Set<T>().ToDictionary(x => x.Name));
 
-    public async Task<T[]> GetProcessableAsync<T>(IProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task<T[]> GetProcessableAsync<T>(IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         Expression<Func<T, bool>> condition = x =>
             x.ProcessStepId == step.Id
@@ -74,7 +69,7 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
 
         return await _context.UpdateAsync(condition, updater, cToken);
     }
-    public async Task<T[]> GetUnprocessableAsync<T>(IProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task<T[]> GetUnprocessableAsync<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         Expression<Func<T, bool>> condition = x =>
             x.ProcessStepId == step.Id
@@ -189,7 +184,7 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
         }
     }
 
-    public async Task SaveProcessableAsync<T>(IProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess
+    public async Task SaveProcessableAsync<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess
     {
         try
         {
