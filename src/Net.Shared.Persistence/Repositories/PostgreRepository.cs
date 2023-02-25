@@ -204,7 +204,7 @@ internal sealed class PostgreWriterRepository<TEntity> : IPersistenceWriterRepos
         }
     }
 
-    public async Task SaveProcessableAsync<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task SaveProcessable<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         try
         {
@@ -235,7 +235,7 @@ internal sealed class PostgreWriterRepository<TEntity> : IPersistenceWriterRepos
         {
             await _context.RollbackTransactionAsync();
 
-            throw new SharedPersistenceException(nameof(PostgreWriterRepository<TEntity>), nameof(SaveProcessableAsync), new(exception));
+            throw new SharedPersistenceException(nameof(PostgreWriterRepository<TEntity>), nameof(SaveProcessable), new(exception));
         }
     }
 }

@@ -184,7 +184,7 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
         }
     }
 
-    public async Task SaveProcessableAsync<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess
+    public async Task SaveProcessable<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess
     {
         try
         {
@@ -216,7 +216,7 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
         {
             await _context.RollbackTransactionAsync();
 
-            throw new SharedPersistenceException(nameof(MongoWriterRepository<TEntity>), nameof(SaveProcessableAsync), new(exception));
+            throw new SharedPersistenceException(nameof(MongoWriterRepository<TEntity>), nameof(SaveProcessable), new(exception));
         }
     }
 }
