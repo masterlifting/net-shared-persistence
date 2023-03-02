@@ -1,9 +1,14 @@
-﻿using Shared.Exceptions.Abstractions;
-using Shared.Exceptions.Models;
+﻿using Net.Shared.Exceptions;
 
 namespace Net.Shared.Persistence.Exceptions;
 
-public sealed class SharedPersistenceException : SharedException
+public sealed class SharedPersistenceException : NetSharedException
 {
-    public SharedPersistenceException(string initiator, string action, ExceptionDescription description) : base(initiator, action, description) { }
+    public SharedPersistenceException(string message) : base(message)
+    {
+    }
+
+    public SharedPersistenceException(Exception exception) : base(exception)
+    {
+    }
 }
