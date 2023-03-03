@@ -1,21 +1,22 @@
-﻿using System.Linq.Expressions;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Settings.Connections;
+using Net.Shared.Persistence.Models.Exceptions;
+using Net.Shared.Persistence.Models.Settings.Connections;
 
-using SharpCompress.Common;
+using System.Linq.Expressions;
 
 namespace Net.Shared.Persistence.Contexts;
 
 public abstract class PostgreContext : DbContext, IPersistencePostgreContext
 {
     private readonly ILoggerFactory _loggerFactory;
-    private readonly PostgreSQLConnectionSettings _connectionSettings;
-    protected PostgreContext(ILoggerFactory loggerFactory, PostgreSQLConnectionSettings connectionSettings)
+    private readonly PostgreConnectionSettings _connectionSettings;
+
+
+    protected PostgreContext(ILoggerFactory loggerFactory, PostgreConnectionSettings connectionSettings)
     {
         _loggerFactory = loggerFactory;
         _connectionSettings = connectionSettings;
@@ -27,31 +28,36 @@ public abstract class PostgreContext : DbContext, IPersistencePostgreContext
         builder.UseNpgsql(_connectionSettings.GetConnectionString());
         base.OnConfiguring(builder);
     }
-
     public new IQueryable<T> Set<T>() where T : class, IPersistentSql => base.Set<T>();
 
-    public Task<T?> FindByIdAsync<T>(CancellationToken cToken, object[] id) where T : class, IPersistentSql =>
+    public string GetTableName<T>() where T : class, IPersistentSql => 
+        Model.FindEntityType(typeof(T))?.ShortName() ?? throw new NetSharedPersistenceException($"Searching a table name {typeof(T).Name} was not found.");
+
+    public IQueryable<T> FromSqlRaw<T>(string sqlQuery) where T : class, IPersistentSql => 
+        base.Set<T>().FromSqlRaw(sqlQuery);
+
+    public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql =>
         base.Set<T>().FindAsync(id, cToken).AsTask();
-    public Task<T[]> FindManyAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql =>
         Set<T>().Where(condition).ToArrayAsync(cToken);
-    public Task<T?> FindFirstAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql =>
         Set<T>().FirstOrDefaultAsync(condition, cToken);
-    public Task<T?> FindSingleAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql =>
         Set<T>().SingleOrDefaultAsync(condition, cToken);
 
-    public async Task CreateAsync<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql
+    public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql
     {
         await base.Set<T>().AddAsync(entity, cToken);
-        await SaveChangesAsync();
+        await SaveChangesAsync(cToken);
     }
-    public async Task CreateManyAsync<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, IPersistentSql
+    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, IPersistentSql
     {
         await base.Set<T>().AddRangeAsync(entities, cToken);
-        await SaveChangesAsync();
+        await SaveChangesAsync(cToken);
     }
-    public async Task<T[]> UpdateAsync<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        var entities = await FindManyAsync(condition, cToken);
+        var entities = await FindMany(condition, cToken);
 
         if (!entities.Any())
             return entities;
@@ -84,9 +90,9 @@ public abstract class PostgreContext : DbContext, IPersistencePostgreContext
 
         return entities;
     }
-    public async Task<T[]> DeleteAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql
+    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        var entities = await FindManyAsync(condition, cToken);
+        var entities = await FindMany(condition, cToken);
 
         if (!entities.Any())
             return entities;
@@ -98,7 +104,7 @@ public abstract class PostgreContext : DbContext, IPersistencePostgreContext
         return entities;
     }
 
-    public Task StartTransactionAsync(CancellationToken cToken = default) => Database.BeginTransactionAsync(cToken);
-    public Task CommitTransactionAsync(CancellationToken cToken = default) => Database.CommitTransactionAsync(cToken);
-    public Task RollbackTransactionAsync(CancellationToken cToken = default) => Database.RollbackTransactionAsync(cToken);
+    public Task StartTransaction(CancellationToken cToken = default) => Database.BeginTransactionAsync(cToken);
+    public Task CommitTransaction(CancellationToken cToken = default) => Database.CommitTransactionAsync(cToken);
+    public Task RollbackTransaction(CancellationToken cToken = default) => Database.RollbackTransactionAsync(cToken);
 }

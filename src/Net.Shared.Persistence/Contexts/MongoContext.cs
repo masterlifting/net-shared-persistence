@@ -4,7 +4,8 @@ using MongoDB.Driver.Linq;
 
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Settings.Connections;
+using Net.Shared.Persistence.Models.Exceptions;
+using Net.Shared.Persistence.Models.Settings.Connections;
 
 using System.Linq.Expressions;
 
@@ -20,7 +21,7 @@ public abstract class MongoContext : IPersistenceMongoContext
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     private IMongoQueryable<T> SetCollection<T>() where T : class, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
-    protected MongoContext(MongoDBConnectionSettings connectionSettings)
+    protected MongoContext(MongoConnectionSettings connectionSettings)
     {
         var connectionString = connectionSettings.GetConnectionString();
         _client = new MongoClient(connectionString);
@@ -34,18 +35,18 @@ public abstract class MongoContext : IPersistenceMongoContext
 
     public IQueryable<T> Set<T>() where T : class, IPersistentNoSql => SetCollection<T>();
 
-    public Task<T[]> FindManyAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
             Task.Run(() => Set<T>().Where(condition).ToArray(), cToken);
-    public Task<T?> FindFirstAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
         Task.Run(() => Set<T>().FirstOrDefault(), cToken);
-    public Task<T?> FindSingleAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
         Task.Run(() => Set<T>().SingleOrDefault(), cToken);
 
-    public Task CreateAsync<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
         GetCollection<T>().InsertOneAsync(entity, null, cToken);
-    public Task CreateManyAsync<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql =>
+    public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql =>
         GetCollection<T>().InsertManyAsync(entities, null, cToken);
-    public async Task<T[]> UpdateAsync<T>(Expression<Func<T, bool>> condition, Dictionary<ContextCommand, (string Name, string Value)> updater, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> condition, Dictionary<ContextCommands, (string Name, object Value)> updater, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
         var updateRules = new BsonDocument();
 
@@ -55,14 +56,14 @@ public abstract class MongoContext : IPersistenceMongoContext
 
             switch (item.Key)
             {
-                case ContextCommand.Set:
+                case ContextCommands.Set:
                     {
-                        updateRules.Add("$set", new BsonDocument(field.Name, field.Value));
+                        updateRules.Add("$set", new BsonDocument(field.Name, field.Value.ToString()));
                         break;
                     }
-                case ContextCommand.Inc:
+                case ContextCommands.Inc:
                     {
-                        updateRules.Add("$inc", new BsonDocument(field.Name, field.Value));
+                        updateRules.Add("$inc", new BsonDocument(field.Name, field.Value.ToString()));
                         break;
                     }
             }
@@ -73,7 +74,8 @@ public abstract class MongoContext : IPersistenceMongoContext
 
         return Array.Empty<T>();
     }
-    public async Task<T[]> DeleteAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql
+
+    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
         var collection = GetCollection<T>();
 
@@ -82,32 +84,33 @@ public abstract class MongoContext : IPersistenceMongoContext
         return Array.Empty<T>();
     }
 
-    public async Task StartTransactionAsync(CancellationToken cToken = default)
+    public async Task StartTransaction(CancellationToken cToken = default)
     {
         if (_session is not null)
-            throw new SharedPersistenceException(nameof(MongoContext), nameof(StartTransactionAsync), new("The transaction session is already"));
+            throw new NetSharedPersistenceException("The transaction session is already");
 
         _session = await _client.StartSessionAsync();
         _session.StartTransaction();
     }
-    public async Task CommitTransactionAsync(CancellationToken cToken = default)
+    public async Task CommitTransaction(CancellationToken cToken = default)
     {
         if (_session is null)
-            throw new SharedPersistenceException(nameof(MongoContext), nameof(CommitTransactionAsync), new("The transaction session was not found"));
+            throw new NetSharedPersistenceException("The transaction session was not found");
 
         await _session.CommitTransactionAsync();
         _session.Dispose();
     }
-    public async Task RollbackTransactionAsync(CancellationToken cToken = default)
+    public async Task RollbackTransaction(CancellationToken cToken = default)
     {
         if (_session is null)
-            throw new SharedPersistenceException(nameof(MongoContext), nameof(RollbackTransactionAsync), new("The transaction session was not found"));
+            throw new NetSharedPersistenceException("The transaction session was not found");
 
         await _session.CommitTransactionAsync();
         _session.Dispose();
     }
 
     public void Dispose() => _session?.Dispose();
+
 }
 public sealed class MongoModelBuilder
 {

@@ -6,7 +6,9 @@ namespace Net.Shared.Persistence.Abstractions.Contexts
 {
     public interface IPersistencePostgreContext : IPersistenceContext<IPersistentSql>
     {
-        Task<T?> FindByIdAsync<T>(CancellationToken cToken = default, object[] id) where T : class, IPersistentSql;
-        Task<T[]> UpdateAsync<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, IPersistentSql;
+        string GetTableName<T>() where T : class, IPersistentSql;
+        IQueryable<T> FromSqlRaw<T>(string sqlQuery) where T : class, IPersistentSql;
+        Task<T?> FindById<T>(object[] id, CancellationToken cToken = default) where T : class, IPersistentSql;
+        Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, IPersistentSql;
     }
 }

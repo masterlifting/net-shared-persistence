@@ -2,15 +2,17 @@
 
 using MongoDB.Driver;
 
+using Net.Shared.Models.Results;
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Abstractions.Repositories.Parts;
+using Net.Shared.Persistence.Models.Exceptions;
 
 using System.Linq.Expressions;
 
 using static Net.Shared.Persistence.Models.Constants.Enums;
-using Net.Shared.Persistence.Abstractions.Repositories;
 
 namespace Net.Shared.Persistence.Repositories;
 
@@ -25,103 +27,103 @@ public abstract class MongoRepository<TEntity> : IPersistenceNoSqlRepository<TEn
     protected MongoRepository(ILogger<TEntity> logger, IPersistenceMongoContext context)
     {
         var objectId = base.GetHashCode();
-        var initiator = $"Mongo repository of '{typeof(TEntity).Name}' by Id {objectId}";
+        var repositoryInfo = $"Mongo repository {objectId} of '{typeof(TEntity).Name}'";
 
         _reader = new Lazy<IPersistenceReaderRepository<TEntity>>(() => new MongoReaderRepository<TEntity>(context));
-        _writer = new Lazy<IPersistenceWriterRepository<TEntity>>(() => new MongoWriterRepository<TEntity>(logger, context, initiator));
+        _writer = new Lazy<IPersistenceWriterRepository<TEntity>>(() => new MongoWriterRepository<TEntity>(logger, context, repositoryInfo));
     }
 }
-internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : IPersistentNoSql
+internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : class, IPersistentNoSql
 {
     private readonly IPersistenceMongoContext _context;
     public MongoReaderRepository(IPersistenceMongoContext context) => _context = context;
 
-    public Task<T?> FindSingleAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindSingleAsync(condition, cToken);
-    public Task<T?> FindFirstAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindFirstAsync(condition, cToken);
-    public Task<T[]> FindManyAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindManyAsync(condition, cToken);
+    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
+        _context.FindSingle(condition, cToken);
+    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
+        _context.FindFirst(condition, cToken);
+    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
+        _context.FindMany(condition, cToken);
 
-    public Task<T[]> GetCatalogsAsync<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
-        _context.FindManyAsync<T>(x => true, cToken);
-    public Task<T?> GetCatalogByIdAsync<T>(int id, CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
-        _context.FindSingleAsync<T>(x => x.Id == id, cToken);
-    public Task<T?> GetCatalogByNameAsync<T>(string name, CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
-        _context.FindSingleAsync<T>(x => x.Name.Equals(name), cToken);
-    public Task<Dictionary<int, T>> GetCatalogsDictionaryByIdAsync<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
+    public Task<T[]> GetCatalogs<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
+        _context.FindMany<T>(x => true, cToken);
+    public Task<T?> GetCatalogById<T>(int id, CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
+        _context.FindSingle<T>(x => x.Id == id, cToken);
+    public Task<T?> GetCatalogByName<T>(string name, CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
+        _context.FindSingle<T>(x => x.Name.Equals(name), cToken);
+    public Task<Dictionary<int, T>> GetCatalogsDictionaryById<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
             Task.Run(() => _context.Set<T>().ToDictionary(x => x.Id));
-    public Task<Dictionary<string, T>> GetCatalogsDictionaryByNameAsync<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
+    public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
             Task.Run(() => _context.Set<T>().ToDictionary(x => x.Name));
 
-    public async Task<T[]> GetProcessableAsync<T>(IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         Expression<Func<T, bool>> condition = x =>
             x.ProcessStepId == step.Id
             && x.ProcessStatusId == (int)ProcessStatuses.Ready;
 
-        var updater = new Dictionary<ContextCommand, (string Name, object Value)>
+        var updater = new Dictionary<ContextCommands, (string Name, object Value)>
         {
-            { ContextCommand.Set, (nameof(IPersistentProcess.Updated), DateTime.UtcNow) },
-            { ContextCommand.Set, (nameof(IPersistentProcess.ProcessStatusId), (int)ProcessStatuses.Processing) },
-            { ContextCommand.Inc, (nameof(IPersistentProcess.ProcessAttempt), 1) }
+            { ContextCommands.Set, (nameof(IPersistentProcess.Updated), DateTime.UtcNow) },
+            { ContextCommands.Set, (nameof(IPersistentProcess.ProcessStatusId), (int)ProcessStatuses.Processing) },
+            { ContextCommands.Inc, (nameof(IPersistentProcess.ProcessAttempt), 1) }
         };
 
-        return await _context.UpdateAsync(condition, updater, cToken);
+        return await _context.Update(condition, updater, cToken);
     }
-    public async Task<T[]> GetUnprocessableAsync<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task<T[]> GetUnprocessableData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
     {
         Expression<Func<T, bool>> condition = x =>
             x.ProcessStepId == step.Id
             && (x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime || x.ProcessStatusId == (int)ProcessStatuses.Error)
             && x.ProcessAttempt < maxAttempts;
 
-        var updater = new Dictionary<ContextCommand, (string Name, object Value)>
+        var updater = new Dictionary<ContextCommands, (string Name, object Value)>
         {
-            { ContextCommand.Set, (nameof(IPersistentProcess.Updated), DateTime.UtcNow) },
-            { ContextCommand.Set, (nameof(IPersistentProcess.ProcessStatusId), (int)ProcessStatuses.Processing) },
-            { ContextCommand.Inc, (nameof(IPersistentProcess.ProcessAttempt), 1) }
+            { ContextCommands.Set, (nameof(IPersistentProcess.Updated), DateTime.UtcNow) },
+            { ContextCommands.Set, (nameof(IPersistentProcess.ProcessStatusId), (int)ProcessStatuses.Processing) },
+            { ContextCommands.Inc, (nameof(IPersistentProcess.ProcessAttempt), 1) }
         };
 
-        return await _context.UpdateAsync(condition, updater, cToken);
+        return await _context.Update(condition, updater, cToken);
     }
 }
-internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : IPersistentNoSql
+public sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : class, IPersistentNoSql
 {
     private readonly ILogger _logger;
     private readonly IPersistenceMongoContext _context;
-    private readonly string _initiator;
+    private readonly string _repositoryInfo;
 
-    public MongoWriterRepository(ILogger logger, IPersistenceMongoContext context, string initiator)
+    public MongoWriterRepository(ILogger logger, IPersistenceMongoContext context, string repositoryInfo)
     {
         _logger = logger;
         _context = context;
-        _initiator = initiator;
+        _repositoryInfo = repositoryInfo;
     }
 
-    public async Task CreateAsync<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
     {
-        await _context.CreateAsync(entity, cToken);
+        await _context.CreateOne(entity, cToken);
 
-        _logger.LogTrace(_initiator, typeof(T).Name + ' ' + Constants.Actions.Created, Constants.Actions.Success);
+        _logger.LogTrace(_repositoryInfo, typeof(T).Name + ' ' + Constants.Actions.Created, Constants.Actions.Success);
     }
-    public async Task CreateManyAsync<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
+    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
     {
         if (!entities.Any())
         {
-            _logger.LogTrace(_initiator, Constants.Actions.Created, Constants.Actions.NoData);
+            _logger.LogTrace(_repositoryInfo, Constants.Actions.Created, Constants.Actions.NoData);
             return;
         }
 
-        await _context.CreateManyAsync(entities, cToken);
+        await _context.CreateMany(entities, cToken);
 
-        _logger.LogTrace(_initiator, Constants.Actions.Created, Constants.Actions.Success);
+        _logger.LogTrace(_repositoryInfo, Constants.Actions.Created, Constants.Actions.Success);
     }
-    public async Task<TryResult<T>> TryCreateAsync<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T>> TryCreateOne<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            await CreateAsync(entity, cToken);
+            await CreateOne(entity, cToken);
             return new TryResult<T>(entity);
         }
         catch (Exception exception)
@@ -129,11 +131,11 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
             return new TryResult<T>(exception);
         }
     }
-    public async Task<TryResult<T[]>> TryCreateRangeAsync<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            await CreateManyAsync(entities, cToken);
+            await CreateMany(entities, cToken);
             return new TryResult<T[]>(entities.ToArray());
         }
         catch (Exception exception)
@@ -142,19 +144,19 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
         }
     }
 
-    public async Task<T[]> UpdateAsync<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
     {
         var entities = await _context.UpdateAsync(condition, entity, cToken);
 
-        _logger.LogTrace(_initiator, Constants.Actions.Updated, Constants.Actions.Success, entities.Length);
+        _logger.LogTrace(_repositoryInfo, Constants.Actions.Updated, Constants.Actions.Success, entities.Length);
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryUpdateAsync<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            var entities = await UpdateAsync(condition, entity, cToken);
+            var entities = await Update(condition, entity, cToken);
             return new TryResult<T[]>(entities);
         }
         catch (Exception exception)
@@ -163,19 +165,19 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
         }
     }
 
-    public async Task<T[]> DeleteAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
     {
-        var entities = await _context.DeleteAsync(condition, cToken);
+        var entities = await _context.Delete(condition, cToken);
 
-        _logger.LogTrace(_initiator, Constants.Actions.Deleted, Constants.Actions.Success, entities.Length);
+        _logger.LogTrace(_repositoryInfo, Constants.Actions.Deleted, Constants.Actions.Success, entities.Length);
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryDeleteAsync<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            var entities = await DeleteAsync(condition, cToken);
+            var entities = await Delete(condition, cToken);
             return new TryResult<T[]>(entities);
         }
         catch (Exception exception)
@@ -184,11 +186,11 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
         }
     }
 
-    public async Task SaveProcessable<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess
+    public async Task SaveProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess
     {
         try
         {
-            await _context.StartTransactionAsync();
+            await _context.StartTransaction();
 
             var count = 0;
             foreach (var entity in entities)
@@ -208,15 +210,15 @@ internal sealed class MongoWriterRepository<TEntity> : IPersistenceWriterReposit
                 count++;
             }
 
-            await _context.CommitTransactionAsync();
+            await _context.CommitTransaction();
 
-            _logger.LogTrace(_initiator, Constants.Actions.Updated, Constants.Actions.Success, count);
+            _logger.LogTrace(_repositoryInfo, Constants.Actions.Updated, Constants.Actions.Success, count);
         }
         catch (Exception exception)
         {
-            await _context.RollbackTransactionAsync();
+            await _context.RollbackTransaction();
 
-            throw new SharedPersistenceException(nameof(MongoWriterRepository<TEntity>), nameof(SaveProcessable), new(exception));
+            throw new NetSharedPersistenceException(exception);
         }
     }
 }
