@@ -1,10 +1,10 @@
-﻿using Net.Shared.Models.Results;
+﻿using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 
 using System.Linq.Expressions;
 
-namespace Net.Shared.Persistence.Abstractions.Repositories.Parts
+namespace Net.Shared.Persistence.Abstractions.Core.Repositories.Parts
 {
     public interface IPersistenceWriterRepository<TEntity> where TEntity : class, IPersistent
     {

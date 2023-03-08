@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Net.Shared.Exceptions\src\Net.Shared.Exceptions\Net.Shared.Exceptions.csproj" />
-    <ProjectReference Include="..\..\..\Net.Shared.Models\src\Net.Shared.Models\Net.Shared.Models.csproj" />
+    <ProjectReference Include="..\..\..\Net.Shared\src\Net.Shared.Models\Net.Shared.Models.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@
 
 using Net.Shared.Persistence.Abstractions.Entities;
 
-namespace Net.Shared.Persistence.Abstractions.Contexts
+namespace Net.Shared.Persistence.Abstractions.Core.Contexts
 {
     public interface IPersistencePostgreContext : IPersistenceContext<IPersistentSql>
     {

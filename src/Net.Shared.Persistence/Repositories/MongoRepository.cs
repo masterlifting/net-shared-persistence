@@ -2,12 +2,12 @@
 
 using MongoDB.Driver;
 
-using Net.Shared.Models.Results;
-using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Models.Domain;
+using Net.Shared.Persistence.Abstractions.Core.Contexts;
+using Net.Shared.Persistence.Abstractions.Core.Repositories;
+using Net.Shared.Persistence.Abstractions.Core.Repositories.Parts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
-using Net.Shared.Persistence.Abstractions.Repositories;
-using Net.Shared.Persistence.Abstractions.Repositories.Parts;
 using Net.Shared.Persistence.Models.Exceptions;
 
 using System.Linq.Expressions;

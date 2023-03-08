@@ -4,7 +4,7 @@ using Net.Shared.Persistence.Abstractions.Entities;
 
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
-namespace Net.Shared.Persistence.Abstractions.Contexts
+namespace Net.Shared.Persistence.Abstractions.Core.Contexts
 {
     public interface IPersistenceMongoContext : IPersistenceContext<IPersistentNoSql>
     {

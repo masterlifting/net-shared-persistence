@@ -3,7 +3,7 @@ using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 
 using System.Linq.Expressions;
 
-namespace Net.Shared.Persistence.Abstractions.Repositories.Parts;
+namespace Net.Shared.Persistence.Abstractions.Core.Repositories.Parts;
 
 public interface IPersistenceReaderRepository<TEntity> where TEntity : class, IPersistent
 {
