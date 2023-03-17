@@ -38,12 +38,12 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
     private readonly IPersistenceMongoContext _context;
     public MongoReaderRepository(IPersistenceMongoContext context) => _context = context;
 
-    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindSingle(condition, cToken);
-    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindFirst(condition, cToken);
-    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindMany(condition, cToken);
+    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity =>
+        _context.FindSingle(filter, cToken);
+    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity =>
+        _context.FindFirst(filter, cToken);
+    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity =>
+        _context.FindMany(filter, cToken);
 
     public Task<T[]> GetCatalogs<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
         _context.FindMany<T>(x => true, cToken);
@@ -62,11 +62,11 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
             x.ProcessStepId == step.Id
             && x.ProcessStatusId == (int)ProcessStatuses.Ready;
 
-        var updater = new Dictionary<ContextCommands, (string Name, object Value)>
+        var updater = (T x) =>
         {
-            { ContextCommands.Set, (nameof(IPersistentProcess.Updated), DateTime.UtcNow) },
-            { ContextCommands.Set, (nameof(IPersistentProcess.ProcessStatusId), (int)ProcessStatuses.Processing) },
-            { ContextCommands.Inc, (nameof(IPersistentProcess.ProcessAttempt), 1) }
+            x.Updated = DateTime.UtcNow;
+            x.ProcessStatusId = (int)ProcessStatuses.Processing;
+            x.ProcessAttempt++;
         };
 
         return await _context.Update(condition, updater, cToken);
@@ -78,11 +78,11 @@ internal sealed class MongoReaderRepository<TEntity> : IPersistenceReaderReposit
             && (x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime || x.ProcessStatusId == (int)ProcessStatuses.Error)
             && x.ProcessAttempt < maxAttempts;
 
-        var updater = new Dictionary<ContextCommands, (string Name, object Value)>
+        var updater = (T x) =>
         {
-            { ContextCommands.Set, (nameof(IPersistentProcess.Updated), DateTime.UtcNow) },
-            { ContextCommands.Set, (nameof(IPersistentProcess.ProcessStatusId), (int)ProcessStatuses.Processing) },
-            { ContextCommands.Inc, (nameof(IPersistentProcess.ProcessAttempt), 1) }
+            x.Updated = DateTime.UtcNow;
+            x.ProcessStatusId = (int)ProcessStatuses.Processing;
+            x.ProcessAttempt++;
         };
 
         return await _context.Update(condition, updater, cToken);
@@ -119,6 +119,7 @@ public sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepositor
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Created, Constants.Actions.Success);
     }
+    
     public async Task<TryResult<T>> TryCreateOne<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
     {
         try
@@ -144,19 +145,27 @@ public sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepositor
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, TEntity
     {
-        var entities = await _context.UpdateAsync(condition, entity, cToken);
+        throw new NotImplementedException();
+    }
+    public Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, TEntity
+    {
+        throw new NotImplementedException();
+    }
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, TEntity
+    {
+        var entities = await _context.Update(filter, entity, cToken);
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Updated, Constants.Actions.Success, entities.Length);
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            var entities = await Update(condition, entity, cToken);
+            var entities = await Update(filter, entity, cToken);
             return new TryResult<T[]>(entities);
         }
         catch (Exception exception)
@@ -165,19 +174,19 @@ public sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepositor
         }
     }
 
-    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity
     {
-        var entities = await _context.Delete(condition, cToken);
+        var entities = await _context.Delete(filter, cToken);
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Deleted, Constants.Actions.Success, entities.Length);
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            var entities = await Delete(condition, cToken);
+            var entities = await Delete(filter, cToken);
             return new TryResult<T[]>(entities);
         }
         catch (Exception exception)
@@ -205,7 +214,7 @@ public sealed class MongoWriterRepository<TEntity> : IPersistenceWriterRepositor
                         entity.ProcessStepId = step.Id;
                 }
 
-                await _context.UpdateAsync(x => x.Id == entity.Id, entity, cToken);
+                await _context.Update(x => x.Id == entity.Id, entity, cToken);
 
                 count++;
             }

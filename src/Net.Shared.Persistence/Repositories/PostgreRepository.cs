@@ -15,8 +15,7 @@ using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories;
 
-public abstract class PostgreRepository<TEntity> : IPersistenceSqlRepository<TEntity>
-    where TEntity : class, IPersistentSql
+public abstract class PostgreRepository<TEntity> : IPersistenceSqlRepository<TEntity> where TEntity : class, IPersistentSql
 {
     private readonly Lazy<IPersistenceReaderRepository<TEntity>> _reader;
     private readonly Lazy<IPersistenceWriterRepository<TEntity>> _writer;
@@ -38,12 +37,12 @@ internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepos
     private readonly IPersistencePostgreContext _context;
     public PostgreReaderRepository(IPersistencePostgreContext context) => _context = context;
 
-    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindSingle(condition, cToken);
-    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindFirst(condition, cToken);
-    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity =>
-        _context.FindMany(condition, cToken);
+    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity => 
+        _context.FindSingle(filter, cToken);
+    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity => 
+        _context.FindFirst(filter, cToken);
+    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity => 
+        _context.FindMany(filter, cToken);
 
     public Task<T[]> GetCatalogs<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, TEntity =>
         _context.FindMany<T>(x => true, cToken);
@@ -73,7 +72,7 @@ internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepos
 	                  FOR UPDATE SKIP LOCKED )
                 RETURNING ""{nameof(IPersistentProcess.Id)}"";";
 
-        var ids = await _context.FromSqlRaw<T>(query).Select(x => x.Id).ToArrayAsync(cToken);
+        var ids = await _context.GetQueryFromSqlRaw<T>(query).Select(x => x.Id).ToArrayAsync(cToken);
 
         return await _context.Set<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
     }
@@ -97,7 +96,7 @@ internal sealed class PostgreReaderRepository<TEntity> : IPersistenceReaderRepos
 	                  FOR UPDATE SKIP LOCKED )
                 RETURNING ""{nameof(IPersistentProcess.Id)}"";";
 
-        var ids = await _context.FromSqlRaw<T>(query).Select(x => x.Id).ToArrayAsync(cToken);
+        var ids = await _context.GetQueryFromSqlRaw<T>(query).Select(x => x.Id).ToArrayAsync(cToken);
 
         return await _context.Set<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
     }
@@ -160,19 +159,27 @@ internal sealed class PostgreWriterRepository<TEntity> : IPersistenceWriterRepos
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, TEntity
     {
-        var entities = await _context.Update(condition, entity, cToken);
+        throw new NotImplementedException();
+    }
+    public Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, TEntity
+    {
+        throw new NotImplementedException();
+    }
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, TEntity
+    {
+        var entities = await _context.Update(filter, entity, cToken);
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Updated, Constants.Actions.Success, entities.Length);
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> condition, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            var entities = await Update(condition, entity, cToken);
+            var entities = await Update(filter, entity, cToken);
 
             return new TryResult<T[]>(entities);
         }
@@ -182,19 +189,19 @@ internal sealed class PostgreWriterRepository<TEntity> : IPersistenceWriterRepos
         }
     }
 
-    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity
     {
-        var entities = await _context.Delete(condition, cToken);
+        var entities = await _context.Delete(filter, cToken);
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Deleted, Constants.Actions.Success, entities.Length);
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> condition, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity
     {
         try
         {
-            var entities = await Delete(condition, cToken);
+            var entities = await Delete(filter, cToken);
 
             return new TryResult<T[]>(entities);
         }

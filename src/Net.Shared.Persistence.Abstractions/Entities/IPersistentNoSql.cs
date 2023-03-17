@@ -1,7 +1,6 @@
-﻿namespace Net.Shared.Persistence.Abstractions.Entities
+﻿namespace Net.Shared.Persistence.Abstractions.Entities;
+
+public interface IPersistentNoSql : IPersistent
 {
-    public interface IPersistentNoSql : IPersistent
-    {
-        string JsonVersion { get; init; }
-    }
+    string JsonVersion { get; set; }
 }

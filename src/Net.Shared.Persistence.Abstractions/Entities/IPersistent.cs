@@ -2,6 +2,6 @@
 
 public interface IPersistent
 {
-    DateTime Created { get; init; }
-    public string? Description { get; init; }
+    DateTime Created { get; set; }
+    public string? Description { get; set; }
 }

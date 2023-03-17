@@ -3,5 +3,5 @@
 public interface IPersistentCatalog : IPersistent
 {
     int Id { get; init; }
-    string Name { get; init; }
+    string Name { get; set; }
 }
