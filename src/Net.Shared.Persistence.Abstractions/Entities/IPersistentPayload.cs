@@ -2,9 +2,9 @@
 
 public interface IPersistentPayload : IPersistent
 {
-    byte[] Payload { get; init; }
-    byte[] PayloadHash { get; init; }
-    string PayloadSource { get; init; }
-    string PayloadContentType { get; init; }
-    string PayloadHashAlgoritm { get; init; }
+    byte[] Payload { get; set; }
+    byte[] PayloadHash { get; set; }
+    string PayloadSource { get; set; }
+    string PayloadContentType { get; set; }
+    string PayloadHashAlgoritm { get; set; }
 }

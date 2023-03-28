@@ -9,7 +9,7 @@ public static class Constants
         public const string Created = "Created";
         public const string Updated = "Updated";
         public const string Deleted = "Deleted";
-        public const string NoData = "Data not found";
+        public const string NoData = "Data was not found";
     }
     public static class Enums
     {
