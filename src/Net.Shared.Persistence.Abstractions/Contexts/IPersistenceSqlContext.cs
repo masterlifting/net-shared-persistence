@@ -6,7 +6,7 @@ public interface IPersistenceSqlContext : IPersistenceContext<IPersistentSql>
 {
     string GetTableName<T>() where T : class, IPersistentSql;
 
-    IQueryable<T> PostFromSqlRaw<T>(FormattableString sql, CancellationToken cToken) where T : class, IPersistentSql;
+    IQueryable<T> GetQueryFromRaw<T>(FormattableString query, CancellationToken cToken) where T : class, IPersistentSql;
 
     Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql;
 

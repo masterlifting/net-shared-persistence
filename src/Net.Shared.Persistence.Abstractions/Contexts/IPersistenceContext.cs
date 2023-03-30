@@ -7,6 +7,7 @@ public interface IPersistenceContext<TEntity> : IDisposable where TEntity : IPer
 {
     IQueryable<T> SetEntity<T>() where T : class, TEntity;
 
+    Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, TEntity;
     Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;
     Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;
     Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;

@@ -30,12 +30,13 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public string GetTableName<T>() where T : class, IPersistentSql =>
         Model.FindEntityType(typeof(T))?.ShortName() ?? throw new NetSharedPersistenceException($"Searching a table name {typeof(T).Name} was not found.");
 
-    public IQueryable<T> PostFromSqlRaw<T>(FormattableString sql, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        base.Set<T>().FromSqlRaw(sql.Format);
+    public IQueryable<T> GetQueryFromRaw<T>(FormattableString query, CancellationToken cToken = default) where T : class, IPersistentSql =>
+        base.Set<T>().FromSqlRaw(query.Format);
 
     public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql =>
         base.Set<T>().FindAsync(id, cToken).AsTask();
 
+    public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => SetEntity<T>().ToArrayAsync(cToken);
     public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
         SetEntity<T>().Where(filter).ToArrayAsync(cToken);
     public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>

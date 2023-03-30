@@ -23,13 +23,13 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
         _repositoryInfo = $"PostgreSql repository {GetHashCode()} of the '{typeof(TEntity).Name}'";
     }
 
-    public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
     {
         await _context.CreateOne(entity, cToken);
 
         _logger.LogTrace(_repositoryInfo, typeof(T).Name + ' ' + Constants.Actions.Created, Constants.Actions.Success);
     }
-    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
+    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
     {
         if (!entities.Any())
         {
@@ -41,7 +41,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Created, Constants.Actions.Success);
     }
-    public async Task<TryResult<T>> TryCreateOne<T>(T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
@@ -53,7 +53,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
             return new TryResult<T>(exception);
         }
     }
-    public async Task<TryResult<T[]>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
@@ -74,7 +74,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
     {
         throw new NotImplementedException();
     }
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, TEntity
     {
         var entities = await _context.Update(filter, entity, cToken);
 
@@ -82,7 +82,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
@@ -96,7 +96,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
         }
     }
 
-    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var entities = await _context.Delete(filter, cToken);
 
@@ -104,7 +104,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, TEntity
+    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
@@ -118,7 +118,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
         }
     }
 
-    public async Task SetProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentProcess, TEntity
+    public async Task SetProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentProcess, TEntity
     {
         try
         {

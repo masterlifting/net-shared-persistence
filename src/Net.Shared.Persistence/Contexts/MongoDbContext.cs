@@ -30,6 +30,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
     public IQueryable<T> SetEntity<T>() where T : class, IPersistentNoSql => SetCollection<T>();
 
+    public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentNoSql =>
+        Task.Run(() => SetEntity<T>().ToArray(), cToken);
     public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
             Task.Run(() => SetEntity<T>().Where(filter).ToArray(), cToken);
     public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
@@ -57,6 +59,10 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         var result = await GetCollection<T>().UpdateManyAsync<T>(filter, updateRules, null, cToken);
 
         return entities;
+    }
+    public Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
