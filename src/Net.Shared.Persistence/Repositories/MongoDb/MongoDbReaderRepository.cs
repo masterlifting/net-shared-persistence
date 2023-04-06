@@ -3,7 +3,6 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Contexts;
-using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
@@ -29,36 +28,4 @@ public sealed class MongoDbReaderRepository<TEntity> : IPersistenceNoSqlReaderRe
             Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Id));
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken) where T : class, IPersistentCatalog, TEntity =>
             Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Name));
-
-    public async Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentProcess, TEntity
-    {
-        Expression<Func<T, bool>> condition = x =>
-            x.ProcessStepId == step.Id
-            && x.ProcessStatusId == (int)ProcessStatuses.Ready;
-
-        var updater = (T x) =>
-        {
-            x.Updated = DateTime.UtcNow;
-            x.ProcessStatusId = (int)ProcessStatuses.Processing;
-            x.ProcessAttempt++;
-        };
-
-        return await _context.Update(condition, updater, cToken);
-    }
-    public async Task<T[]> GetUnprocessableData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentProcess, TEntity
-    {
-        Expression<Func<T, bool>> condition = x =>
-            x.ProcessStepId == step.Id
-            && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
-            && x.ProcessAttempt < maxAttempts;
-
-        var updater = (T x) =>
-        {
-            x.Updated = DateTime.UtcNow;
-            x.ProcessStatusId = (int)ProcessStatuses.Processing;
-            x.ProcessAttempt++;
-        };
-
-        return await _context.Update(condition, updater, cToken);
-    }
 }

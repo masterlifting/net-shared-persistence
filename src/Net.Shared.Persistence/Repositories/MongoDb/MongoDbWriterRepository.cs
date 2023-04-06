@@ -3,11 +3,8 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
-using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
@@ -115,42 +112,6 @@ public sealed class MongoDbWriterRepository<TEntity> : IPersistenceNoSqlWriterRe
         catch (Exception exception)
         {
             return new TryResult<T[]>(exception);
-        }
-    }
-
-    public async Task SetProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, TEntity, IPersistentProcess
-    {
-        try
-        {
-            await _context.StartTransaction(cToken);
-
-            var count = 0;
-            foreach (var entity in entities)
-            {
-                entity.Updated = DateTime.UtcNow;
-
-                if (entity.ProcessStatusId != (int)ProcessStatuses.Error)
-                {
-                    entity.Error = null;
-
-                    if (step is not null)
-                        entity.ProcessStepId = step.Id;
-                }
-
-                await _context.Update(x => x.Id == entity.Id, entity, cToken);
-
-                count++;
-            }
-
-            await _context.CommitTransaction(cToken);
-
-            _logger.LogTrace(_repositoryInfo, Constants.Actions.Updated, Constants.Actions.Success, count);
-        }
-        catch (Exception exception)
-        {
-            await _context.RollbackTransaction(cToken);
-
-            throw new NetSharedPersistenceException(exception);
         }
     }
 }
