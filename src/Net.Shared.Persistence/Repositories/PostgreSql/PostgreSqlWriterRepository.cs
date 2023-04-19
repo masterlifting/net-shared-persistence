@@ -38,28 +38,28 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
 
         _logger.LogTrace(_repositoryInfo, Constants.Actions.Created, Constants.Actions.Success);
     }
-    public async Task<TryResult<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
+    public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
             await CreateOne(entity, cToken);
-            return new TryResult<T>(entity);
+            return new Result<T>(new[] { entity });
         }
         catch (Exception exception)
         {
-            return new TryResult<T>(exception);
+            return new Result<T>(exception);
         }
     }
-    public async Task<TryResult<T[]>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
+    public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
             await CreateMany(entities, cToken);
-            return new TryResult<T[]>(entities.ToArray());
+            return new Result<T>(entities);
         }
         catch (Exception exception)
         {
-            return new TryResult<T[]>(exception);
+            return new Result<T>(exception);
         }
     }
 
@@ -67,7 +67,7 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
     {
         throw new NotImplementedException();
     }
-    public Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, TEntity
+    public Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, TEntity
     {
         throw new NotImplementedException();
     }
@@ -79,17 +79,17 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, TEntity
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
             var entities = await Update(filter, entity, cToken);
 
-            return new TryResult<T[]>(entities);
+            return new Result<T>(entities);
         }
         catch (Exception exception)
         {
-            return new TryResult<T[]>(exception);
+            return new Result<T>(exception);
         }
     }
 
@@ -101,17 +101,17 @@ public sealed class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepo
 
         return entities;
     }
-    public async Task<TryResult<T[]>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
+    public async Task<Result<T>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         try
         {
             var entities = await Delete(filter, cToken);
 
-            return new TryResult<T[]>(entities);
+            return new Result<T>(entities);
         }
         catch (Exception exception)
         {
-            return new TryResult<T[]>(exception);
+            return new Result<T>(exception);
         }
     }
 }

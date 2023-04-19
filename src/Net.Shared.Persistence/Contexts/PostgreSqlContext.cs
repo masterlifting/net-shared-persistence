@@ -28,7 +28,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public IQueryable<T> SetEntity<T>() where T : class, IPersistentSql => base.Set<T>();
 
     public string GetTableName<T>() where T : class, IPersistentSql =>
-        Model.FindEntityType(typeof(T))?.ShortName() ?? throw new NetSharedPersistenceException($"Searching a table name {typeof(T).Name} was not found.");
+        Model.FindEntityType(typeof(T))?.ShortName() ?? throw new PersistenceException($"Searching a table name {typeof(T).Name} was not found.");
 
     public IQueryable<T> GetQueryFromRaw<T>(FormattableString query, CancellationToken cToken = default) where T : class, IPersistentSql =>
         base.Set<T>().FromSqlRaw(query.Format);

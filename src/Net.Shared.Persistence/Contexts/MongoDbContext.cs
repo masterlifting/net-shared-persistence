@@ -76,7 +76,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public async Task StartTransaction(CancellationToken cToken = default)
     {
         if (_session is not null)
-            throw new NetSharedPersistenceException("The transaction session is already");
+            throw new PersistenceException("The transaction session is already");
 
         _session = await _client.StartSessionAsync(null, cToken);
         _session.StartTransaction();
@@ -84,7 +84,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public async Task CommitTransaction(CancellationToken cToken = default)
     {
         if (_session is null)
-            throw new NetSharedPersistenceException("The transaction session was not found");
+            throw new PersistenceException("The transaction session was not found");
 
         await _session.CommitTransactionAsync(cToken);
         _session.Dispose();
@@ -92,7 +92,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public async Task RollbackTransaction(CancellationToken cToken = default)
     {
         if (_session is null)
-            throw new NetSharedPersistenceException("The transaction session was not found");
+            throw new PersistenceException("The transaction session was not found");
 
         await _session.CommitTransactionAsync(cToken);
         _session.Dispose();
