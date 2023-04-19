@@ -9,7 +9,7 @@ using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
-public sealed class PostgreSqlProcessRepository : IPersistenceProcessRepository
+public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessRepository
 {
     private readonly PostgreSqlContext _context;
     private readonly ILogger _logger;
@@ -20,25 +20,26 @@ public sealed class PostgreSqlProcessRepository : IPersistenceProcessRepository
         _logger = logger;
     }
 
-    Task<T[]> IPersistenceProcessRepository.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceProcessRepository.GetSteps<T>(CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetProcessSteps<T>(CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceProcessRepository.GetUnprocessableData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task IPersistenceProcessRepository.SetProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
+    Task IPersistenceProcessRepository<IPersistentSql>.SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
+
 
     // Task<Dictionary<string, T>> IPersistenceProcessRepository.GetSteps<T>(CancellationToken cToken) =>
     //     _context.SetEntity<T>().ToDictionaryAsync(x => x.Name, cToken);

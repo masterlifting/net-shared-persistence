@@ -2,6 +2,6 @@
 
 namespace Net.Shared.Persistence.Abstractions.Repositories.Sql;
 
-public interface IPersistenceSqlWriterRepository<T> : IPersistenceWriterRepository<T> where T : class, IPersistentSql
+public interface IPersistenceSqlWriterRepository : IPersistenceWriterRepository<IPersistentSql>
 {
 }

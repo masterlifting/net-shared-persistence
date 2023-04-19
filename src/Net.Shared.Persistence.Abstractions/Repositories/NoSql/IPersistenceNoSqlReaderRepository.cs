@@ -2,6 +2,6 @@
 
 namespace Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 
-public interface IPersistenceNoSqlReaderRepository<T> : IPersistenceReaderRepository<T> where T : class, IPersistentNoSql
+public interface IPersistenceNoSqlReaderRepository : IPersistenceReaderRepository<IPersistentNoSql>
 {
 }

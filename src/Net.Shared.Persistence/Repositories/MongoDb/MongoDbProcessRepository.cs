@@ -1,35 +1,35 @@
-﻿using System.Linq.Expressions;
+﻿using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
-using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public sealed class MongoDbProcessRepository : IPersistenceProcessRepository
+public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
 {
     private readonly MongoDbContext _context;
     public MongoDbProcessRepository(MongoDbContext context) => _context = context;
 
-    Task<T[]> IPersistenceProcessRepository.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceProcessRepository.GetSteps<T>(CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessSteps<T>(CancellationToken cToken)
+    {
+        return _context.FindMany<T>(_ => true, cToken);
+    }
+
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceProcessRepository.GetUnprocessableData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
+    Task IPersistenceProcessRepository<IPersistentNoSql>.SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task IPersistenceProcessRepository.SetProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
-    {
-        throw new NotImplementedException();
-    }
 
     // Task<Dictionary<string, T>> IPersistenceProcessRepository.GetSteps<T>(CancellationToken cToken) =>
     //     Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Name));
