@@ -2,7 +2,7 @@
 
 namespace Net.Shared.Persistence.Models.Settings.Connections.Base;
 
-public abstract record NetSharedPersistenceConnectionSettings : ConnectionSettings
+public abstract record PersistenceConnection : Connection
 {
     public string Database { get; set; } = null!;
     public abstract string ConnectionString { get; }

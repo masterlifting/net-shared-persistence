@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+
 using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Entities;
 

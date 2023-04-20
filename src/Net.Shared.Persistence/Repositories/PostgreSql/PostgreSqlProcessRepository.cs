@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+
+using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
@@ -11,35 +13,34 @@ namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
 public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessRepository
 {
-    private readonly PostgreSqlContext _context;
+    private readonly IPersistenceSqlContext _context;
     private readonly ILogger _logger;
 
-    public PostgreSqlProcessRepository(PostgreSqlContext context, ILogger<PostgreSqlProcessRepository> logger)
+    public PostgreSqlProcessRepository(ILogger<PostgreSqlProcessRepository> logger, IPersistenceSqlContext context)
     {
-        _context = context;
         _logger = logger;
+        _context = context;
+        Context = context;
     }
 
-    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
+    public IPersistenceSqlContext Context { get; }
+
+    public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcessStep
     {
         throw new NotImplementedException();
     }
-
-    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetProcessSteps<T>(CancellationToken cToken)
+    public Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         throw new NotImplementedException();
     }
-
-    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
+    public Task<T[]> GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         throw new NotImplementedException();
     }
-
-    Task IPersistenceProcessRepository<IPersistentSql>.SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
+    public Task SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         throw new NotImplementedException();
     }
-
 
     // Task<Dictionary<string, T>> IPersistenceProcessRepository.GetSteps<T>(CancellationToken cToken) =>
     //     _context.SetEntity<T>().ToDictionaryAsync(x => x.Name, cToken);

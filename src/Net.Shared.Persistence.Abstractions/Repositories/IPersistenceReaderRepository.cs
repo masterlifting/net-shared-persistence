@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 

@@ -1,102 +1,97 @@
-﻿using Net.Shared.Persistence.Abstractions.Entities;
+﻿using Microsoft.Extensions.Logging;
+
+using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
-using Net.Shared.Persistence.Contexts;
+
+using static Net.Shared.Persistence.Models.Constants.Enums;
+using System.Linq.Expressions;
+using Net.Shared.Persistence.Models.Exceptions;
+using Net.Shared.Extensions.Logging;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
 public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
 {
-    private readonly MongoDbContext _context;
-    public MongoDbProcessRepository(MongoDbContext context) => _context = context;
+    private readonly ILogger<MongoDbProcessRepository> _logger;
+    private readonly IPersistenceNoSqlContext _context;
 
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
+    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository> logger, IPersistenceNoSqlContext context)
     {
-        throw new NotImplementedException();
+        _logger = logger;
+        _context = context;
+        Context = context;
     }
 
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessSteps<T>(CancellationToken cToken)
+    public IPersistenceNoSqlContext Context { get; }
+
+    public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcessStep =>
+        Task.Run(() => _context.SetEntity<T>().ToArray());
+    public async Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        return _context.FindMany<T>(_ => true, cToken);
-    }
+        Expression<Func<T, bool>> condition = x =>
+            x.ProcessStepId == step.Id
+            && x.ProcessStatusId == (int)ProcessStatuses.Ready;
 
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
+        var updater = (T x) =>
+        {
+            x.Updated = DateTime.UtcNow;
+            x.ProcessStatusId = (int)ProcessStatuses.Processing;
+            x.ProcessAttempt++;
+        };
+
+        return await _context.Update(condition, updater, cToken);
+    }
+    public async Task<T[]> GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        throw new NotImplementedException();
-    }
+        Expression<Func<T, bool>> condition = x =>
+            x.ProcessStepId == step.Id
+            && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
+            && x.ProcessAttempt < maxAttempts;
 
-    Task IPersistenceProcessRepository<IPersistentNoSql>.SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
+        var updater = (T x) =>
+        {
+            x.Updated = DateTime.UtcNow;
+            x.ProcessStatusId = (int)ProcessStatuses.Processing;
+            x.ProcessAttempt++;
+        };
+
+        return await _context.Update(condition, updater, cToken);
+    }
+    public async Task SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        throw new NotImplementedException();
+        try
+        {
+            await _context.StartTransaction(cToken);
+
+            var count = 0;
+            foreach (var entity in entities)
+            {
+                entity.Updated = DateTime.UtcNow;
+
+                if (entity.ProcessStatusId != (int)ProcessStatuses.Error)
+                {
+                    entity.Error = null;
+
+                    if (step is not null)
+                        entity.ProcessStepId = step.Id;
+                }
+
+                await _context.Update(x => x.Id == entity.Id, entity, cToken);
+
+                count++;
+            }
+
+            await _context.CommitTransaction(cToken);
+
+            _logger.Trace($"The {count} entities were updated.");
+        }
+        catch (Exception exception)
+        {
+            await _context.RollbackTransaction(cToken);
+
+            throw new PersistenceException(exception);
+        }
     }
-
-
-    // Task<Dictionary<string, T>> IPersistenceProcessRepository.GetSteps<T>(CancellationToken cToken) =>
-    //     Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Name));
-    // async Task<T[]> IPersistenceProcessRepository.GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken)
-    // {
-    //     Expression<Func<T, bool>> condition = x =>
-    //         x.ProcessStepId == step.Id
-    //         && x.ProcessStatusId == (int)ProcessStatuses.Ready;
-
-    //     var updater = (T x) =>
-    //     {
-    //         x.Updated = DateTime.UtcNow;
-    //         x.ProcessStatusId = (int)ProcessStatuses.Processing;
-    //         x.ProcessAttempt++;
-    //     };
-
-    //     return await _context.Update(condition, updater, cToken);
-    // }
-    // async Task<T[]> IPersistenceProcessRepository.GetUnprocessableData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
-    // {
-    //     Expression<Func<T, bool>> condition = x =>
-    //         x.ProcessStepId == step.Id
-    //         && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
-    //         && x.ProcessAttempt < maxAttempts;
-
-    //     var updater = (T x) =>
-    //     {
-    //         x.Updated = DateTime.UtcNow;
-    //         x.ProcessStatusId = (int)ProcessStatuses.Processing;
-    //         x.ProcessAttempt++;
-    //     };
-
-    //     return await _context.Update(condition, updater, cToken);
-    // }
-    // async Task IPersistenceProcessRepository.SetProcessableData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken)
-    // {
-    //     try
-    //     {
-    //         await _context.StartTransaction(cToken);
-
-    //         var count = 0;
-    //         foreach (var entity in entities)
-    //         {
-    //             entity.Updated = DateTime.UtcNow;
-
-    //             if (entity.ProcessStatusId != (int)ProcessStatuses.Error)
-    //             {
-    //                 entity.Error = null;
-
-    //                 if (step is not null)
-    //                     entity.ProcessStepId = step.Id;
-    //             }
-
-    //             await _context.Update(x => x.Id == entity.Id, entity, cToken);
-
-    //             count++;
-    //         }
-
-    //         await _context.CommitTransaction(cToken);
-
-    //         _logger.LogTrace(_repositoryInfo, Constants.Actions.Updated, Constants.Actions.Success, count);
-    //     }
-    //     catch (Exception exception)
-    //     {
-    //         await _context.RollbackTransaction(cToken);
-
-    //         throw new NetSharedPersistenceException(exception);
-    //     }
-    // }
 }

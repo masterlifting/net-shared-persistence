@@ -2,7 +2,7 @@
 
 namespace Net.Shared.Persistence.Models.Settings.Connections;
 
-public sealed record MongoConnectionSettings : NetSharedPersistenceConnectionSettings
+public sealed record MongoDbConnection : PersistenceConnection
 {
     public override string ConnectionString => $"mongodb://{User}:{Password}@{Host}:{Port}/?authMechanism=SCRAM-SHA-256";
 }

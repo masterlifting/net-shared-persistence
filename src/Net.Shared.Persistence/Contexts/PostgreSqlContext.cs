@@ -11,9 +11,9 @@ namespace Net.Shared.Persistence.Contexts;
 public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 {
     private readonly ILoggerFactory _loggerFactory;
-    private readonly PostgreConnectionSettings _connectionSettings;
+    private readonly PostgreSqlConnection _connectionSettings;
 
-    protected PostgreSqlContext(ILoggerFactory loggerFactory, PostgreConnectionSettings connectionSettings)
+    protected PostgreSqlContext(ILoggerFactory loggerFactory, PostgreSqlConnection connectionSettings)
     {
         _loggerFactory = loggerFactory;
         _connectionSettings = connectionSettings;

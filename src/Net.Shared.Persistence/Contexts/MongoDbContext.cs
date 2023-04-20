@@ -17,7 +17,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     private IMongoQueryable<T> SetCollection<T>() where T : class, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
-    protected MongoDbContext(MongoConnectionSettings connectionSettings)
+    protected MongoDbContext(MongoDbConnection connectionSettings)
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
@@ -121,7 +121,7 @@ public sealed class MongoModelBuilder
     {
         var collection = SetCollection<T>(options);
 
-        if (items.Any())
+        if (!items.Any())
             collection.InsertMany(items);
 
         return collection;
