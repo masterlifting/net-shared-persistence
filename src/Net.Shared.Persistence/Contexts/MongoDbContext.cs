@@ -121,7 +121,7 @@ public sealed class MongoModelBuilder
     {
         var collection = SetCollection<T>(options);
 
-        if (!items.Any())
+        if (items.Any() && collection.CountDocuments(new BsonDocument()) == 0)
             collection.InsertMany(items);
 
         return collection;

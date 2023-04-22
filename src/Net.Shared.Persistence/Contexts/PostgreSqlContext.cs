@@ -25,39 +25,51 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         builder.UseNpgsql(_connectionSettings.ConnectionString);
         base.OnConfiguring(builder);
     }
-    public IQueryable<T> SetEntity<T>() where T : class, IPersistentSql => base.Set<T>();
+    public IQueryable<T> SetEntity<T>() where T : class, IPersistentSql => Set<T>();
 
     public string GetTableName<T>() where T : class, IPersistentSql =>
         Model.FindEntityType(typeof(T))?.ShortName() ?? throw new PersistenceException($"Searching a table name {typeof(T).Name} was not found.");
 
     public IQueryable<T> GetQueryFromRaw<T>(FormattableString query, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        base.Set<T>().FromSqlRaw(query.Format);
+        Set<T>().FromSqlRaw(query.Format);
 
     public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql =>
-        base.Set<T>().FindAsync(id, cToken).AsTask();
+        Set<T>().FindAsync(id, cToken).AsTask();
 
-    public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => SetEntity<T>().ToArrayAsync(cToken);
+    public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => Set<T>().ToArrayAsync(cToken);
     public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        SetEntity<T>().Where(filter).ToArrayAsync(cToken);
+        Set<T>().Where(filter).ToArrayAsync(cToken);
     public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        SetEntity<T>().FirstOrDefaultAsync(filter, cToken);
+        Set<T>().FirstOrDefaultAsync(filter, cToken);
     public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        SetEntity<T>().SingleOrDefaultAsync(filter, cToken);
+        Set<T>().SingleOrDefaultAsync(filter, cToken);
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        await base.Set<T>().AddAsync(entity, cToken);
+        await Set<T>().AddAsync(entity, cToken);
         await SaveChangesAsync(cToken);
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        await base.Set<T>().AddRangeAsync(entities, cToken);
+        await Set<T>().AddRangeAsync(entities, cToken);
         await SaveChangesAsync(cToken);
     }
 
-    public Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
     {
-        throw new NotImplementedException();
+        var entitiesToUpdate = await Set<T>().Where(filter).ToArrayAsync(cToken);
+
+        if (!entitiesToUpdate.Any())
+            return entitiesToUpdate;
+
+        foreach (var entityToUpdate in entitiesToUpdate)
+        {
+            updater(entityToUpdate);
+        }
+
+        Set<T>().UpdateRange(entitiesToUpdate);
+        await SaveChangesAsync(cToken);
+        return entitiesToUpdate;
     }
 
     public async Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql

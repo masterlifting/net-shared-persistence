@@ -15,7 +15,7 @@ public interface IPersistenceContext<TEntity> : IDisposable where TEntity : IPer
     Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity;
     Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity;
 
-    Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, TEntity;
+    Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, TEntity;
 
     Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;
 
