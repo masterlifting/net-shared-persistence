@@ -1,31 +1,35 @@
-﻿using Microsoft.Extensions.Logging;
-
+﻿using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
-
-using static Net.Shared.Persistence.Models.Constants.Enums;
-using System.Linq.Expressions;
+using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Exceptions;
-using Net.Shared.Extensions.Logging;
+using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
 public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
 {
-    private readonly ILogger<MongoDbProcessRepository> _logger;
-    private readonly IPersistenceNoSqlContext _context;
-
-    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository> logger, IPersistenceNoSqlContext context)
+    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository> logger, MongoDbContext context)
     {
         _logger = logger;
         _context = context;
         Context = context;
     }
 
-    public IPersistenceNoSqlContext Context { get; }
+    #region PRIVATE FIELDS
+    private readonly ILogger<MongoDbProcessRepository> _logger;
+    private readonly MongoDbContext _context;
+    #endregion
 
+    #region PUBLIC PROPERTIES
+    public IPersistenceNoSqlContext Context { get; }
+    #endregion
+
+    #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcessStep =>
         Task.Run(() => _context.SetEntity<T>().ToArray());
     public async Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
@@ -94,4 +98,5 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             throw new PersistenceException(exception);
         }
     }
+    #endregion
 }

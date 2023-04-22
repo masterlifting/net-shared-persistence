@@ -6,16 +6,13 @@ using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
+using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
 public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
 {
-    private readonly ILogger _logger;
-    private readonly IPersistenceNoSqlContext _context;
-    private readonly string _repositoryInfo;
-
-    public MongoDbWriterRepository(ILogger<MongoDbWriterRepository> logger, IPersistenceNoSqlContext context)
+    public MongoDbWriterRepository(ILogger<MongoDbWriterRepository> logger, MongoDbContext context)
     {
         _logger = logger;
         _context = context;
@@ -23,8 +20,17 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         _repositoryInfo = $"MongoDb repository {GetHashCode()}.'";
     }
 
-    public IPersistenceNoSqlContext Context { get; }
+    #region PRIVATE FIELDS
+    private readonly ILogger _logger;
+    private readonly MongoDbContext _context;
+    private readonly string _repositoryInfo;
+    #endregion
 
+    #region PUBLIC PROPERTIES
+    public IPersistenceNoSqlContext Context { get; }
+    #endregion
+
+    #region PUBLIC METHODS
     public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         await _context.CreateOne(entity, cToken);
@@ -118,4 +124,5 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             return new Result<T>(exception);
         }
     }
+    #endregion
 }

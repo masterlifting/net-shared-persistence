@@ -7,16 +7,13 @@ using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Repositories.Sql;
+using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
 public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 {
-    private readonly ILogger _logger;
-    private readonly IPersistenceSqlContext _context;
-    private readonly string _repositoryInfo;
-
-    public PostgreSqlWriterRepository(ILogger<PostgreSqlWriterRepository> logger, IPersistenceSqlContext context)
+    public PostgreSqlWriterRepository(ILogger<PostgreSqlWriterRepository> logger, PostgreSqlContext context)
     {
         _logger = logger;
         _context = context;
@@ -24,8 +21,17 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         _repositoryInfo = $"PostgreSql repository {GetHashCode()}.'";
     }
 
-    public IPersistenceSqlContext Context { get; }
+    #region PRIVATE FIELDS
+    private readonly ILogger _logger;
+    private readonly PostgreSqlContext _context;
+    private readonly string _repositoryInfo;
+    #endregion
 
+    #region PUBLIC PROPERTIES
+    public IPersistenceSqlContext Context { get; }
+    #endregion
+
+    #region PUBLIC METHODS
     public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
         await _context.CreateOne(entity, cToken);
@@ -120,4 +126,5 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             return new Result<T>(exception);
         }
     }
+    #endregion
 }

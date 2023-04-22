@@ -4,21 +4,27 @@ using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
+using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
 public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
 {
-    private readonly IPersistenceNoSqlContext _context;
-
-    public MongoDbReaderRepository(IPersistenceNoSqlContext context)
+    public MongoDbReaderRepository(MongoDbContext context)
     {
         _context = context;
         Context = context;
     }
 
-    public IPersistenceNoSqlContext Context { get; }
+    #region PRIVATE FIELDS
+    private readonly MongoDbContext _context;
+    #endregion
 
+    #region PUBLIC PROPERTIES
+    public IPersistenceNoSqlContext Context { get; }
+    #endregion
+
+    #region PUBLIC METHODS
     public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentNoSql =>
         _context.FindSingle(filter, cToken);
     public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentNoSql =>
@@ -36,4 +42,5 @@ public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
             Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Id));
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken) where T : class, IPersistentCatalog, IPersistentNoSql =>
             Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Name));
+    #endregion
 }
