@@ -1,7 +1,9 @@
 ﻿using System.Linq.Expressions;
+
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Models.Exceptions;
@@ -44,39 +46,71 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql =>
         GetCollection<T>().InsertManyAsync(entities, null, cToken);
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var entities = await FindMany(filter, cToken);
+        try
+        {
+            await StartTransaction(cToken);
 
-        if (!entities.Any())
-            return entities;
+            var collection = GetCollection<T>();
 
-        var updateRules = new BsonDocument();
+            var documents = collection.AsQueryable().Where(filter).ToArray();
 
-        for (int i = 0; i < entities.Length; i++)
-            entities[i] = entity;
+            if (!documents.Any())
+                return documents;
 
-        var result = await GetCollection<T>().UpdateManyAsync<T>(filter, updateRules, null, cToken);
+            foreach (var document in documents)
+            {
+                updater(document);
 
-        return entities;
+                var replaceOptions = new ReplaceOptions 
+                { 
+                    IsUpsert = false 
+                };
+
+                var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
+            }
+
+            await CommitTransaction(cToken);
+
+            return documents;
+        }
+        catch
+        {
+            await RollbackTransaction(cToken);
+            throw;
+        }
     }
-    public Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
-        var collection = GetCollection<T>();
-        _ = await collection.DeleteManyAsync<T>(filter, null, cToken);
+       try
+        {
+            await StartTransaction(cToken);
 
-        return Array.Empty<T>();
+            var collection = GetCollection<T>();
+            
+            var documents = collection.AsQueryable().Where(filter).ToArray();
+
+            if (!documents.Any())
+                return documents;
+            
+            await collection.DeleteManyAsync(_session, filter, null, cToken);
+            
+            await CommitTransaction(cToken);
+            
+            return documents;
+        }
+        catch
+        {
+            await RollbackTransaction(cToken);
+            throw;
+        }
     }
 
     public async Task StartTransaction(CancellationToken cToken = default)
     {
         if (_session is not null)
-            throw new PersistenceException("The transaction session is already");
+            return;
 
         _session = await _client.StartSessionAsync(null, cToken);
         _session.StartTransaction();
@@ -86,16 +120,35 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         if (_session is null)
             throw new PersistenceException("The transaction session was not found");
 
-        await _session.CommitTransactionAsync(cToken);
-        _session.Dispose();
+        try
+        {
+            await _session.CommitTransactionAsync(cToken);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            _session.Dispose();
+        }
     }
     public async Task RollbackTransaction(CancellationToken cToken = default)
     {
         if (_session is null)
             throw new PersistenceException("The transaction session was not found");
-
-        await _session.CommitTransactionAsync(cToken);
-        _session.Dispose();
+        try
+        {
+            await _session.CommitTransactionAsync(cToken);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            _session.Dispose();
+        }
     }
 
     public void Dispose() => _session?.Dispose();

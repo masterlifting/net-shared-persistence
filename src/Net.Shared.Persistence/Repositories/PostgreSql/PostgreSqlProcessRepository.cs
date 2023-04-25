@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Contexts;
@@ -6,7 +7,6 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
@@ -51,7 +51,11 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var ids = await _context.GetQueryFromRaw<T>(query, cToken).Select(x => x.Id).ToArrayAsync(cToken);
 
-        return await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
+        var result = await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
+
+        _logger.Trace($"The processable data {result} were gotten.");
+
+        return result;
     }
     public async Task<T[]> GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
@@ -75,43 +79,34 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var ids = await _context.GetQueryFromRaw<T>(query, cToken).Select(x => x.Id).ToArrayAsync(cToken);
 
-        return await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
+        var result = await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
+
+        _logger.Trace($"The unprocessed data {result} were gotten.");
+
+        return result;
     }
     public async Task SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
-        try
+        Expression<Func<T, bool>> filter = x => entities.Select(y => y.Id).Contains(x.Id);
+
+        var dateUpdate = DateTime.UtcNow;
+
+        var updater = (T x) =>
         {
-            await _context.StartTransaction(cToken);
+            x.Updated = dateUpdate;
 
-            var count = 0;
-            var dateUpdated = DateTime.UtcNow;
-
-            foreach (var entity in entities)
+            if (x.ProcessStatusId != (int)ProcessStatuses.Error)
             {
-                entity.Updated = dateUpdated;
+                x.Error = null;
 
-                if (entity.ProcessStatusId != (int)ProcessStatuses.Error)
-                {
-                    entity.Error = null;
-
-                    if (step is not null)
-                        entity.ProcessStepId = step.Id;
-                }
-
-                await _context.Update(x => x.Id == entity.Id, entity, cToken);
-                count++;
+                if (step is not null)
+                    x.ProcessStepId = step.Id;
             }
+        };
 
-            await _context.CommitTransaction(cToken);
+        var result = await _context.Update(filter, updater, cToken);
 
-            _logger.Trace($"Updated {count} entities in {typeof(T).Name} table");
-        }
-        catch (Exception exception)
-        {
-            await _context.RollbackTransaction(cToken);
-
-            throw new PersistenceException(exception);
-        }
+        _logger.Trace($"The processed data {result} were updated.");
     }
     #endregion
 }

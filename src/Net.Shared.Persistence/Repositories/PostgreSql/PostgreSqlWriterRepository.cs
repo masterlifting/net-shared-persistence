@@ -75,27 +75,19 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         }
     }
 
-    public Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
     {
-        throw new NotImplementedException();
-    }
-    public Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentSql
-    {
-        throw new NotImplementedException();
-    }
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, IPersistentSql
-    {
-        var entities = await _context.Update(filter, entity, cToken);
+        var entities = await _context.Update(filter, updater, cToken);
 
         _logger.Trace($"The entities {entities} were updated by {_repositoryInfo}.");
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, T entity, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
-            var entities = await Update(filter, entity, cToken);
+            var entities = await Update(filter, updaters, cToken);
 
             return new Result<T>(entities);
         }

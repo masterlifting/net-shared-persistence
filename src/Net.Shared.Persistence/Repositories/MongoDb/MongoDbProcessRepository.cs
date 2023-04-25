@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+
 using Microsoft.Extensions.Logging;
 using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Contexts;
@@ -6,7 +7,7 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
+
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
@@ -34,7 +35,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         Task.Run(() => _context.SetEntity<T>().ToArray());
     public async Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        Expression<Func<T, bool>> condition = x =>
+        Expression<Func<T, bool>> filter = x =>
             x.ProcessStepId == step.Id
             && x.ProcessStatusId == (int)ProcessStatuses.Ready;
 
@@ -45,11 +46,15 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.ProcessAttempt++;
         };
 
-        return await _context.Update(condition, updater, cToken);
+        var result = await _context.Update(filter, updater, cToken);
+
+        _logger.Trace($"The processable data {result} were gotten.");
+
+        return result;
     }
     public async Task<T[]> GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        Expression<Func<T, bool>> condition = x =>
+        Expression<Func<T, bool>> filter = x =>
             x.ProcessStepId == step.Id
             && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
             && x.ProcessAttempt < maxAttempts;
@@ -61,42 +66,36 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.ProcessAttempt++;
         };
 
-        return await _context.Update(condition, updater, cToken);
+        var result = await _context.Update(filter, updater, cToken);
+
+        _logger.Trace($"The unprocessed data {result} were gotten.");
+
+        return result;
     }
     public async Task SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        try
-        {
-            await _context.StartTransaction(cToken);
+        Expression<Func<T, bool>> filter = x => entities.Select(y => y.Id).Contains(x.Id);
 
-            var count = 0;
-            foreach (var entity in entities)
+        var dateUpdate = DateTime.UtcNow;
+
+        var updater = (T x) =>
+        {
+            x.Updated = dateUpdate;
+
+            if (x.ProcessStatusId != (int)ProcessStatuses.Error)
             {
-                entity.Updated = DateTime.UtcNow;
+                x.Error = null;
 
-                if (entity.ProcessStatusId != (int)ProcessStatuses.Error)
-                {
-                    entity.Error = null;
-
-                    if (step is not null)
-                        entity.ProcessStepId = step.Id;
-                }
-
-                await _context.Update(x => x.Id == entity.Id, entity, cToken);
-
-                count++;
+                if (step is not null)
+                    x.ProcessStepId = step.Id;
             }
+        };
 
-            await _context.CommitTransaction(cToken);
+        var result = await _context.Update(filter, updater, cToken);
 
-            _logger.Trace($"The {count} entities were updated.");
-        }
-        catch (Exception exception)
-        {
-            await _context.RollbackTransaction(cToken);
+        _logger.Trace($"The processed data {result} were updated.");
 
-            throw new PersistenceException(exception);
-        }
+        return;
     }
     #endregion
 }

@@ -1,6 +1,8 @@
 ﻿using System.Linq.Expressions;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Models.Exceptions;
@@ -57,19 +59,28 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
     {
-        var entitiesToUpdate = await Set<T>().Where(filter).ToArrayAsync(cToken);
-
-        if (!entitiesToUpdate.Any())
-            return entitiesToUpdate;
-
-        foreach (var entityToUpdate in entitiesToUpdate)
+        try
         {
-            updater(entityToUpdate);
-        }
+            await StartTransaction(cToken);
 
-        Set<T>().UpdateRange(entitiesToUpdate);
-        await SaveChangesAsync(cToken);
-        return entitiesToUpdate;
+            var entities = await FindMany(filter, cToken);
+
+            if (!entities.Any())
+                return entities;
+
+            foreach (var entity in entities)
+                updater(entity);
+
+            await SaveChangesAsync(cToken);
+
+            await CommitTransaction(cToken);
+            return entities;
+        }
+        catch
+        {
+            await RollbackTransaction(cToken);
+            throw;
+        }
     }
 
     public async Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
@@ -85,16 +96,26 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        var entities = await FindMany(filter, cToken);
+        try
+        {
+            await StartTransaction(cToken);
+          
+            var entities = await FindMany(filter, cToken);
+            
+            if (!entities.Any())
+                return entities;
+            
+            await DeleteMany(entities, cToken);
 
-        if (!entities.Any())
+            await CommitTransaction(cToken);
+            
             return entities;
-
-        base.Set<T>().RemoveRange(entities);
-
-        await SaveChangesAsync(cToken);
-
-        return entities;
+        }
+        catch
+        {
+            await RollbackTransaction(cToken);
+            throw;
+        }
     }
 
     public async Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
@@ -108,7 +129,44 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         await SaveChangesAsync(cToken);
     }
 
-    public Task StartTransaction(CancellationToken cToken = default) => Database.BeginTransactionAsync(cToken);
-    public Task CommitTransaction(CancellationToken cToken = default) => Database.CommitTransactionAsync(cToken);
-    public Task RollbackTransaction(CancellationToken cToken = default) => Database.RollbackTransactionAsync(cToken);
+    public Task StartTransaction(CancellationToken cToken = default) =>
+        Database.CurrentTransaction is not null
+            ? Task.CompletedTask
+            : Database.BeginTransactionAsync(cToken);
+    public Task CommitTransaction(CancellationToken cToken = default)
+    {
+        if (Database.CurrentTransaction == null)
+            throw new PersistenceException("No transaction to commit.");
+
+        try
+        {
+            return Database.CommitTransactionAsync(cToken);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            Database.CurrentTransaction.Dispose();
+        }
+    }
+    public Task RollbackTransaction(CancellationToken cToken = default)
+    {
+        if (Database.CurrentTransaction == null)
+            throw new PersistenceException("No transaction to rollback.");
+
+        try
+        {
+            return Database.RollbackTransactionAsync(cToken);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            Database.CurrentTransaction.Dispose();
+        }
+    }
 }
