@@ -14,6 +14,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly PostgreSqlConnection _connectionSettings;
+    private bool _isExternalTransaction;
 
     protected PostgreSqlContext(ILoggerFactory loggerFactory, PostgreSqlConnection connectionSettings)
     {
@@ -61,8 +62,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     {
         try
         {
-            await StartTransaction(cToken);
-
+            if(!_isExternalTransaction && Database.CurrentTransaction is null)
+                await Database.BeginTransactionAsync(cToken);
+            
             var entities = await FindMany(filter, cToken);
 
             if (!entities.Any())
@@ -73,13 +75,22 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             await SaveChangesAsync(cToken);
 
-            await CommitTransaction(cToken);
+            if(!_isExternalTransaction && Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.CommitAsync(cToken);
+
             return entities;
         }
         catch
         {
-            await RollbackTransaction(cToken);
+            if(Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.RollbackAsync(cToken);
+            
             throw;
+        }
+        finally
+        {
+            if(!_isExternalTransaction && Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.DisposeAsync();
         }
     }
 
@@ -98,8 +109,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     {
         try
         {
-            await StartTransaction(cToken);
-          
+            if(!_isExternalTransaction && Database.CurrentTransaction is null)
+                await Database.BeginTransactionAsync(cToken);
+
             var entities = await FindMany(filter, cToken);
             
             if (!entities.Any())
@@ -107,14 +119,21 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
             
             await DeleteMany(entities, cToken);
 
-            await CommitTransaction(cToken);
+            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.CommitAsync(cToken);
             
             return entities;
         }
         catch
         {
-            await RollbackTransaction(cToken);
+            if (Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.RollbackAsync(cToken);
             throw;
+        }
+        finally
+        {
+            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.DisposeAsync();
         }
     }
 
@@ -129,18 +148,26 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         await SaveChangesAsync(cToken);
     }
 
-    public Task StartTransaction(CancellationToken cToken = default) =>
-        Database.CurrentTransaction is not null
-            ? Task.CompletedTask
-            : Database.BeginTransactionAsync(cToken);
-    public Task CommitTransaction(CancellationToken cToken = default)
+    public Task StartTransaction(CancellationToken cToken = default)
     {
-        if (Database.CurrentTransaction == null)
+        if (Database.CurrentTransaction is not null)
+        {
+            return Task.CompletedTask;
+        }
+        else
+        {
+            _isExternalTransaction = true;
+            return Database.BeginTransactionAsync(cToken);
+        }
+    }
+    public async Task CommitTransaction(CancellationToken cToken = default)
+    {
+        if (Database.CurrentTransaction is null)
             throw new PersistenceException("No transaction to commit.");
 
         try
         {
-            return Database.CommitTransactionAsync(cToken);
+            await Database.CurrentTransaction.CommitAsync(cToken);
         }
         catch
         {
@@ -148,17 +175,18 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         }
         finally
         {
-            Database.CurrentTransaction.Dispose();
+            _isExternalTransaction = false;
+            await Database.CurrentTransaction.DisposeAsync();
         }
     }
-    public Task RollbackTransaction(CancellationToken cToken = default)
+    public async Task RollbackTransaction(CancellationToken cToken = default)
     {
-        if (Database.CurrentTransaction == null)
+        if (Database.CurrentTransaction is null)
             throw new PersistenceException("No transaction to rollback.");
 
         try
         {
-            return Database.RollbackTransactionAsync(cToken);
+            await Database.CurrentTransaction.RollbackAsync(cToken);
         }
         catch
         {
@@ -166,7 +194,8 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         }
         finally
         {
-            Database.CurrentTransaction.Dispose();
+            _isExternalTransaction = false;
+            await Database.CurrentTransaction.DisposeAsync();
         }
     }
 }

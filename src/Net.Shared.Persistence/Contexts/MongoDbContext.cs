@@ -16,6 +16,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     private readonly IMongoDatabase _dataBase;
     private readonly MongoClient _client;
     private IClientSessionHandle? _session;
+    private bool _isExternalTransaction;
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     private IMongoQueryable<T> SetCollection<T>() where T : class, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
@@ -50,7 +51,11 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         try
         {
-            await StartTransaction(cToken);
+            if(!_isExternalTransaction && _session is null)
+            {
+                _session = await _client.StartSessionAsync(null, cToken);
+                _session.StartTransaction();
+            }    
 
             var collection = GetCollection<T>();
 
@@ -71,21 +76,32 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
             }
 
-            await CommitTransaction(cToken);
+            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+                await _session.CommitTransactionAsync(cToken);
 
             return documents;
         }
         catch
         {
-            await RollbackTransaction(cToken);
+            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+                await _session.AbortTransactionAsync(cToken);
             throw;
+        }
+        finally
+        {
+            if(!_isExternalTransaction)
+                _session?.Dispose();
         }
     }
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
        try
         {
-            await StartTransaction(cToken);
+            if(!_isExternalTransaction && _session is null)
+            {
+                _session = await _client.StartSessionAsync(null, cToken);
+                _session.StartTransaction();
+            }
 
             var collection = GetCollection<T>();
             
@@ -96,28 +112,36 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             
             await collection.DeleteManyAsync(_session, filter, null, cToken);
             
-            await CommitTransaction(cToken);
+            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+                await _session.CommitTransactionAsync(cToken);
             
             return documents;
         }
         catch
         {
-            await RollbackTransaction(cToken);
+            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+                await _session.AbortTransactionAsync(cToken);
             throw;
+        }
+        finally
+        {
+            if(!_isExternalTransaction)
+                _session?.Dispose();
         }
     }
 
     public async Task StartTransaction(CancellationToken cToken = default)
     {
-        if (_session is not null)
+        if (_session?.IsInTransaction is true)
             return;
 
         _session = await _client.StartSessionAsync(null, cToken);
         _session.StartTransaction();
+        _isExternalTransaction = true;
     }
     public async Task CommitTransaction(CancellationToken cToken = default)
     {
-        if (_session is null)
+        if (_session is null || _session.IsInTransaction is false)
             throw new PersistenceException("The transaction session was not found");
 
         try
@@ -130,16 +154,17 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
         finally
         {
+            _isExternalTransaction = false;
             _session.Dispose();
         }
     }
     public async Task RollbackTransaction(CancellationToken cToken = default)
     {
-        if (_session is null)
+        if (_session is null || _session.IsInTransaction is false)
             throw new PersistenceException("The transaction session was not found");
         try
         {
-            await _session.CommitTransactionAsync(cToken);
+            await _session.AbortTransactionAsync(cToken);
         }
         catch
         {
@@ -147,6 +172,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
         finally
         {
+            _isExternalTransaction = false;
             _session.Dispose();
         }
     }
