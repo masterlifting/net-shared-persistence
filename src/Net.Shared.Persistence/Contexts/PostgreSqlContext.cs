@@ -62,9 +62,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     {
         try
         {
-            if(!_isExternalTransaction && Database.CurrentTransaction is null)
+            if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
-            
+
             var entities = await FindMany(filter, cToken);
 
             if (!entities.Any())
@@ -75,21 +75,21 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             await SaveChangesAsync(cToken);
 
-            if(!_isExternalTransaction && Database.CurrentTransaction is not null)
+            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.CommitAsync(cToken);
 
             return entities;
         }
         catch
         {
-            if(Database.CurrentTransaction is not null)
+            if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.RollbackAsync(cToken);
-            
+
             throw;
         }
         finally
         {
-            if(!_isExternalTransaction && Database.CurrentTransaction is not null)
+            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
@@ -109,19 +109,19 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     {
         try
         {
-            if(!_isExternalTransaction && Database.CurrentTransaction is null)
+            if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
             var entities = await FindMany(filter, cToken);
-            
+
             if (!entities.Any())
                 return entities;
-            
+
             await DeleteMany(entities, cToken);
 
             if (!_isExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.CommitAsync(cToken);
-            
+
             return entities;
         }
         catch

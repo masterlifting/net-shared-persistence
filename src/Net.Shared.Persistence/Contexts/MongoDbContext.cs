@@ -1,6 +1,8 @@
 ﻿using System.Linq.Expressions;
 
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
@@ -24,10 +26,10 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
-        OnModelCreating(new MongoModelBuilder(_dataBase));
+        OnModelCreating(new MongoDbBuilder(_dataBase));
     }
 
-    public virtual void OnModelCreating(MongoModelBuilder builder)
+    public virtual void OnModelCreating(MongoDbBuilder builder)
     {
     }
 
@@ -51,11 +53,11 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         try
         {
-            if(!_isExternalTransaction && _session is null)
+            if (!_isExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
-            }    
+            }
 
             var collection = GetCollection<T>();
 
@@ -68,64 +70,64 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             {
                 updater(document);
 
-                var replaceOptions = new ReplaceOptions 
-                { 
-                    IsUpsert = false 
+                var replaceOptions = new ReplaceOptions
+                {
+                    IsUpsert = false
                 };
 
                 var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
             }
 
-            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
 
             return documents;
         }
         catch
         {
-            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
             throw;
         }
         finally
         {
-            if(!_isExternalTransaction)
+            if (!_isExternalTransaction)
                 _session?.Dispose();
         }
     }
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
-       try
+        try
         {
-            if(!_isExternalTransaction && _session is null)
+            if (!_isExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
             }
 
             var collection = GetCollection<T>();
-            
+
             var documents = collection.AsQueryable().Where(filter).ToArray();
 
             if (!documents.Any())
                 return documents;
-            
+
             await collection.DeleteManyAsync(_session, filter, null, cToken);
-            
-            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
-            
+
             return documents;
         }
         catch
         {
-            if(!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
             throw;
         }
         finally
         {
-            if(!_isExternalTransaction)
+            if (!_isExternalTransaction)
                 _session?.Dispose();
         }
     }
@@ -141,7 +143,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     }
     public async Task CommitTransaction(CancellationToken cToken = default)
     {
-        if (_session is null || _session.IsInTransaction is false)
+        if (_session?.IsInTransaction != true)
             throw new PersistenceException("The transaction session was not found");
 
         try
@@ -160,7 +162,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     }
     public async Task RollbackTransaction(CancellationToken cToken = default)
     {
-        if (_session is null || _session.IsInTransaction is false)
+        if (_session?.IsInTransaction != true)
             throw new PersistenceException("The transaction session was not found");
         try
         {
@@ -179,10 +181,10 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
     public void Dispose() => _session?.Dispose();
 }
-public sealed class MongoModelBuilder
+public sealed class MongoDbBuilder
 {
     private readonly IMongoDatabase _database;
-    public MongoModelBuilder(IMongoDatabase database) => _database = database;
+    public MongoDbBuilder(IMongoDatabase database) => _database = database;
 
     public IMongoCollection<T> SetCollection<T>(CreateCollectionOptions? options = null) where T : class, IPersistentNoSql
     {
@@ -190,6 +192,7 @@ public sealed class MongoModelBuilder
 
         if (collection is null)
         {
+            BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
             _database.CreateCollection(typeof(T).Name, options);
             collection = _database.GetCollection<T>(typeof(T).Name);
         }
