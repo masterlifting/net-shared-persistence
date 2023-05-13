@@ -32,68 +32,84 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
     #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcessStep =>
         _context.SetEntity<T>().ToArrayAsync(cToken);
-    public async Task<T[]> GetProcessableData<T>(IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
+    public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
-        var tableName = _context.GetTableName<T>();
+        var updated = DateTime.UtcNow;
 
-        FormattableString query = @$"
-                UPDATE ""{tableName}"" SET
-                      ""{nameof(IPersistentProcess.ProcessStatusId)}"" = {(int)ProcessStatuses.Processing}
-                    , ""{nameof(IPersistentProcess.ProcessAttempt)}"" = ""{nameof(IPersistentProcess.ProcessAttempt)}"" + 1
-                    , ""{nameof(IPersistentProcess.Updated)}"" = NOW()
-                WHERE ""{nameof(IPersistentProcess.Id)}"" IN 
-                    ( SELECT ""{nameof(IPersistentProcess.Id)}""
-                      FROM ""{tableName}""
-                      WHERE ""{nameof(IPersistentProcess.ProcessStepId)}"" = {step.Id} AND ""{nameof(IPersistentProcess.ProcessStatusId)}"" = {(int)ProcessStatuses.Ready} 
-                      LIMIT {limit}
-                      FOR UPDATE SKIP LOCKED )
-                RETURNING ""{nameof(IPersistentProcess.Id)}"";";
+        var updatedCount = await _context.SetEntity<T>()
+            .Where(x =>
+                x.ProcessHostId == hostId
+                && x.ProcessStepId == step.Id
+                && x.ProcessStatusId == (int)ProcessStatuses.Ready)
+            .Take(limit)
+            .ExecuteUpdateAsync(x => x
+                .SetProperty(y => y.ProcessStatusId, (int)ProcessStatuses.Processing)
+                .SetProperty(y => y.ProcessAttempt, y => y.ProcessAttempt + 1)
+                .SetProperty(y => y.Updated, updated)
+            , cToken);
 
-        var ids = await _context.GetQueryFromRaw<T>(query, cToken).Select(x => x.Id).ToArrayAsync(cToken);
+        var result = await _context.SetEntity<T>()
+            .Where(x =>
+                x.ProcessHostId == hostId
+                && x.ProcessStepId == step.Id
+                && x.ProcessStatusId == (int)ProcessStatuses.Processing
+                && x.Updated == updated)
+            .ToArrayAsync(cToken);
 
-        var result = await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
+        _logger.Trace($"The processable data were updated and received. Items count - {result.Length}.");
 
-        _logger.Trace($"The processable data {result} were received.");
+        if (result.Length != updatedCount)
+            _logger.Warning($"The processable data were updated. Items count - {updatedCount}, but received - {result.Length}.");
 
         return result;
     }
-    public async Task<T[]> GetUnprocessedData<T>(IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
+    public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
-        var tableName = _context.GetTableName<T>();
+        var updated = DateTime.UtcNow;
 
-        FormattableString query = @$"
-                UPDATE ""{tableName}"" SET
-                      ""{nameof(IPersistentProcess.ProcessStatusId)}"" = {(int)ProcessStatuses.Processing}
-                    , ""{nameof(IPersistentProcess.ProcessAttempt)}"" = ""{nameof(IPersistentProcess.ProcessAttempt)}"" + 1
-                    , ""{nameof(IPersistentProcess.Updated)}"" = NOW()
-                WHERE ""{nameof(IPersistentProcess.Id)}"" IN 
-                    ( SELECT ""{nameof(IPersistentProcess.Id)}""
-                      FROM ""{tableName}""
-                      WHERE 
-                            ""{nameof(IPersistentProcess.ProcessStepId)}"" = {step.Id} 
-                            AND ((""{nameof(IPersistentProcess.ProcessStatusId)}"" = {(int)ProcessStatuses.Processing} AND ""{nameof(IPersistentProcess.Updated)}"" < '{updateTime: yyyy-MM-dd HH:mm:ss}') OR (""{nameof(IPersistentProcess.ProcessStatusId)}"" = {(int)ProcessStatuses.Error}))
-    		                AND ""{nameof(IPersistentProcess.ProcessAttempt)}"" < {maxAttempts}
-                      LIMIT {limit}
-                      FOR UPDATE SKIP LOCKED )
-                RETURNING ""{nameof(IPersistentProcess.Id)}"";";
+        var updatedCount = await _context.SetEntity<T>()
+            .Where(x =>
+                x.ProcessHostId == hostId
+                && x.ProcessStepId == step.Id
+                && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
+                && x.ProcessAttempt < maxAttempts)
+            .Take(limit)
+            .ExecuteUpdateAsync(x => x
+                .SetProperty(y => y.ProcessStatusId, (int)ProcessStatuses.Processing)
+                .SetProperty(y => y.ProcessAttempt, y => y.ProcessAttempt + 1)
+                .SetProperty(y => y.Updated, updated)
+            , cToken);
 
-        var ids = await _context.GetQueryFromRaw<T>(query, cToken).Select(x => x.Id).ToArrayAsync(cToken);
+        var result = await _context.SetEntity<T>()
+            .Where(x =>
+                x.ProcessHostId == hostId
+                && x.ProcessStepId == step.Id
+                && x.ProcessStatusId == (int)ProcessStatuses.Processing
+                && x.Updated == updated)
+            .ToArrayAsync(cToken);
 
-        var result = await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
+        _logger.Trace($"The unprocessed data were updated and received. Items count - {result.Length}.");
 
-        _logger.Trace($"The unprocessed data {result} were received.");
+        if (result.Length != updatedCount)
+            _logger.Warning($"The unprocessed data were updated. Items count - {updatedCount}, but received - {result.Length}.");
 
         return result;
     }
-    public async Task SetProcessedData<T>(IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
-        Expression<Func<T, bool>> filter = x => entities.Select(y => y.Id).Contains(x.Id);
+        var entity = entities.First();
 
-        var dateUpdate = DateTime.UtcNow;
+        Expression<Func<T, bool>> filter = x =>
+            x.ProcessHostId == hostId
+            && x.ProcessStepId == entity.ProcessStepId
+            && x.ProcessAttempt == entity.ProcessAttempt
+            && x.Updated == entity.Updated;
+
+        var updated = DateTime.UtcNow;
 
         var updater = (T x) =>
         {
-            x.Updated = dateUpdate;
+            x.Updated = updated;
 
             if (x.ProcessStatusId != (int)ProcessStatuses.Error)
             {

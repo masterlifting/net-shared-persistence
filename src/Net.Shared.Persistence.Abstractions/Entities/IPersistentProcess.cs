@@ -2,7 +2,7 @@
 
 public interface IPersistentProcess : IPersistent
 {
-    long Id { get; init; }
+    Guid ProcessHostId { get; set; }
     int ProcessStatusId { get; set; }
     int ProcessStepId { get; set; }
     byte ProcessAttempt { get; set; }
