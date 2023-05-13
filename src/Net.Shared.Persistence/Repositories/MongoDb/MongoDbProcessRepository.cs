@@ -36,15 +36,15 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
         Expression<Func<T, bool>> filter = x =>
-            x.ProcessHostId == hostId
-            && x.ProcessStepId == step.Id
-            && x.ProcessStatusId == (int)ProcessStatuses.Ready;
+            x.HostId == hostId
+            && x.StepId == step.Id
+            && x.StatusId == (int)ProcessStatuses.Ready;
 
         var updater = (T x) =>
         {
             x.Updated = DateTime.UtcNow;
-            x.ProcessStatusId = (int)ProcessStatuses.Processing;
-            x.ProcessAttempt++;
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
         };
 
         var result = await _context.Update(filter, updater, cToken);
@@ -56,16 +56,16 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
         Expression<Func<T, bool>> filter = x =>
-            x.ProcessHostId == hostId
-            && x.ProcessStepId == step.Id
-            && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
-            && x.ProcessAttempt < maxAttempts;
+            x.HostId == hostId
+            && x.StepId == step.Id
+            && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
+            && x.Attempt < maxAttempts;
 
         var updater = (T x) =>
         {
             x.Updated = DateTime.UtcNow;
-            x.ProcessStatusId = (int)ProcessStatuses.Processing;
-            x.ProcessAttempt++;
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
         };
 
         var result = await _context.Update(filter, updater, cToken);
@@ -79,9 +79,9 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         var entity = entities.First();
 
         Expression<Func<T, bool>> filter = x =>
-            x.ProcessHostId == hostId
-            && x.ProcessStepId == entity.ProcessStepId
-            && x.ProcessAttempt == entity.ProcessAttempt
+            x.HostId == hostId
+            && x.StepId == entity.StepId
+            && x.Attempt == entity.Attempt
             && x.Updated == entity.Updated;
 
         var updated = DateTime.UtcNow;
@@ -90,12 +90,12 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         {
             x.Updated = updated;
 
-            if (x.ProcessStatusId != (int)ProcessStatuses.Error)
+            if (x.StatusId != (int)ProcessStatuses.Error)
             {
                 x.Error = null;
 
                 if (step is not null)
-                    x.ProcessStepId = step.Id;
+                    x.StepId = step.Id;
             }
         };
 

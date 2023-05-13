@@ -38,21 +38,21 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var updatedCount = await _context.SetEntity<T>()
             .Where(x =>
-                x.ProcessHostId == hostId
-                && x.ProcessStepId == step.Id
-                && x.ProcessStatusId == (int)ProcessStatuses.Ready)
+                x.HostId == hostId
+                && x.StepId == step.Id
+                && x.StatusId == (int)ProcessStatuses.Ready)
             .Take(limit)
             .ExecuteUpdateAsync(x => x
-                .SetProperty(y => y.ProcessStatusId, (int)ProcessStatuses.Processing)
-                .SetProperty(y => y.ProcessAttempt, y => y.ProcessAttempt + 1)
+                .SetProperty(y => y.StatusId, (int)ProcessStatuses.Processing)
+                .SetProperty(y => y.Attempt, y => y.Attempt + 1)
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
         var result = await _context.SetEntity<T>()
             .Where(x =>
-                x.ProcessHostId == hostId
-                && x.ProcessStepId == step.Id
-                && x.ProcessStatusId == (int)ProcessStatuses.Processing
+                x.HostId == hostId
+                && x.StepId == step.Id
+                && x.StatusId == (int)ProcessStatuses.Processing
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
@@ -69,22 +69,22 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var updatedCount = await _context.SetEntity<T>()
             .Where(x =>
-                x.ProcessHostId == hostId
-                && x.ProcessStepId == step.Id
-                && ((x.ProcessStatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.ProcessStatusId == (int)ProcessStatuses.Error)
-                && x.ProcessAttempt < maxAttempts)
+                x.HostId == hostId
+                && x.StepId == step.Id
+                && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
+                && x.Attempt < maxAttempts)
             .Take(limit)
             .ExecuteUpdateAsync(x => x
-                .SetProperty(y => y.ProcessStatusId, (int)ProcessStatuses.Processing)
-                .SetProperty(y => y.ProcessAttempt, y => y.ProcessAttempt + 1)
+                .SetProperty(y => y.StatusId, (int)ProcessStatuses.Processing)
+                .SetProperty(y => y.Attempt, y => y.Attempt + 1)
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
         var result = await _context.SetEntity<T>()
             .Where(x =>
-                x.ProcessHostId == hostId
-                && x.ProcessStepId == step.Id
-                && x.ProcessStatusId == (int)ProcessStatuses.Processing
+                x.HostId == hostId
+                && x.StepId == step.Id
+                && x.StatusId == (int)ProcessStatuses.Processing
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
@@ -100,9 +100,9 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
         var entity = entities.First();
 
         Expression<Func<T, bool>> filter = x =>
-            x.ProcessHostId == hostId
-            && x.ProcessStepId == entity.ProcessStepId
-            && x.ProcessAttempt == entity.ProcessAttempt
+            x.HostId == hostId
+            && x.StepId == entity.StepId
+            && x.Attempt == entity.Attempt
             && x.Updated == entity.Updated;
 
         var updated = DateTime.UtcNow;
@@ -111,12 +111,12 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
         {
             x.Updated = updated;
 
-            if (x.ProcessStatusId != (int)ProcessStatuses.Error)
+            if (x.StatusId != (int)ProcessStatuses.Error)
             {
                 x.Error = null;
 
                 if (step is not null)
-                    x.ProcessStepId = step.Id;
+                    x.StepId = step.Id;
             }
         };
 
