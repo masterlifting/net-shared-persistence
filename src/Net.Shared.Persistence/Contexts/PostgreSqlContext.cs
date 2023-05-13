@@ -38,6 +38,8 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql =>
         Set<T>().FindAsync(id, cToken).AsTask();
+    public Task<T?> FindById<T>(object id, CancellationToken cToken) where T : class, IPersistentSql =>
+        Set<T>().FindAsync(id, cToken).AsTask();
 
     public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => Set<T>().ToArrayAsync(cToken);
     public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>

@@ -188,16 +188,18 @@ public sealed class MongoDbBuilder
 
     public IMongoCollection<T> SetCollection<T>(CreateCollectionOptions? options = null) where T : class, IPersistentNoSql
     {
-        var collection = _database.GetCollection<T>(typeof(T).Name);
+        var collections = _database.ListCollections().ToList();
+
+        var collection = collections.Find(x => x["name"] == typeof(T).Name);
 
         if (collection is null)
         {
             BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
             _database.CreateCollection(typeof(T).Name, options);
-            collection = _database.GetCollection<T>(typeof(T).Name);
+            return _database.GetCollection<T>(typeof(T).Name);
         }
 
-        return collection;
+        return _database.GetCollection<T>(typeof(T).Name);
     }
     public IMongoCollection<T> SetCollection<T>(IEnumerable<T> items, CreateCollectionOptions? options = null) where T : class, IPersistentNoSql
     {

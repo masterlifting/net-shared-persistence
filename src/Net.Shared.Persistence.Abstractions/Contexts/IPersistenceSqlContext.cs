@@ -9,6 +9,7 @@ public interface IPersistenceSqlContext : IPersistenceContext<IPersistentSql>
     IQueryable<T> GetQueryFromRaw<T>(FormattableString query, CancellationToken cToken) where T : class, IPersistentSql;
 
     Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql;
+    Task<T?> FindById<T>(object id, CancellationToken cToken) where T : class, IPersistentSql;
 
     Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql;
     Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql;

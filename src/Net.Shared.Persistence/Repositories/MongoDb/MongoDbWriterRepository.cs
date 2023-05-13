@@ -35,19 +35,19 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         await _context.CreateOne(entity, cToken);
 
-        _logger.Trace($"The entity {entity} was created by {_repositoryInfo}.");
+        _logger.Debug($"The entity {entity} was created by {_repositoryInfo}.");
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         if (!entities.Any())
         {
-            _logger.Trace($"The entities {entities} were not created by {_repositoryInfo} because the collection is empty.");
+            _logger.Warning($"The entities {entities} were not created by {_repositoryInfo} because the collection is empty.");
             return;
         }
 
         await _context.CreateMany(entities, cToken);
 
-        _logger.Trace($"The entities {entities} were created by {_repositoryInfo}.");
+        _logger.Debug($"The entities {entities} were created by {_repositoryInfo}.");
     }
     public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
     {
@@ -78,7 +78,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         var entities = await _context.Update(filter, updaters, cToken);
 
-        _logger.Trace($"The entities {entities} were updated by {_repositoryInfo}.");
+        _logger.Debug($"The entities {entities} were updated by {_repositoryInfo}.");
 
         return entities;
     }
@@ -99,7 +99,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         var entities = await _context.Delete(filter, cToken);
 
-        _logger.Trace($"The entities {entities} were deleted by {_repositoryInfo}.");
+        _logger.Debug($"The entities {entities} were deleted by {_repositoryInfo}.");
 
         return entities;
     }

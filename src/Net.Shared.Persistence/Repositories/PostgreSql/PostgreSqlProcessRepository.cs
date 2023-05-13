@@ -53,7 +53,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var result = await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
 
-        _logger.Trace($"The processable data {result} were gotten.");
+        _logger.Trace($"The processable data {result} were received.");
 
         return result;
     }
@@ -81,7 +81,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var result = await _context.SetEntity<T>().Where(x => ids.Contains(x.Id)).ToArrayAsync(cToken);
 
-        _logger.Trace($"The unprocessed data {result} were gotten.");
+        _logger.Trace($"The unprocessed data {result} were received.");
 
         return result;
     }

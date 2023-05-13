@@ -25,6 +25,11 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
     #endregion
 
     #region PUBLIC METHODS
+
+    public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql =>
+        _context.FindById<T>(id, cToken);
+    public Task<T?> FindById<T>(object id, CancellationToken cToken) where T : class, IPersistentSql =>
+        _context.FindById<T>(id, cToken);
     public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentSql =>
         _context.FindSingle(filter, cToken);
     public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentSql =>
@@ -42,5 +47,6 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
             Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Id));
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken) where T : class, IPersistentCatalog, IPersistentSql =>
             Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Name));
+
     #endregion
 }

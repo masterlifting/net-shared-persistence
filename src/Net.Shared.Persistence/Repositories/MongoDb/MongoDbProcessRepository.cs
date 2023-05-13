@@ -48,7 +48,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         var result = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The processable data {result} were gotten.");
+        _logger.Trace($"The processable data {result} were received.");
 
         return result;
     }
@@ -68,7 +68,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         var result = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The unprocessed data {result} were gotten.");
+        _logger.Trace($"The unprocessed data {result} were received.");
 
         return result;
     }

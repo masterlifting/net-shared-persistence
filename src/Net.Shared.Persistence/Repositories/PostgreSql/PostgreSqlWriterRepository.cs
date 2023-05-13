@@ -36,19 +36,19 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
     {
         await _context.CreateOne(entity, cToken);
 
-        _logger.Trace($"The entity {entity} was created by {_repositoryInfo}.");
+        _logger.Debug($"The entity {entity} was created by {_repositoryInfo}.");
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
         if (!entities.Any())
         {
-            _logger.Trace($"The entities {entities} were not created by {_repositoryInfo} because the collection is empty.");
+            _logger.Warning($"The entities {entities} were not created by {_repositoryInfo} because the collection is empty.");
             return;
         }
 
         await _context.CreateMany(entities, cToken);
 
-        _logger.Trace($"The entities {entities} were created by {_repositoryInfo}.");
+        _logger.Debug($"The entities {entities} were created by {_repositoryInfo}.");
     }
     public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
@@ -79,7 +79,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
     {
         var entities = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The entities {entities} were updated by {_repositoryInfo}.");
+        _logger.Debug($"The entities {entities} were updated by {_repositoryInfo}.");
 
         return entities;
     }
@@ -96,12 +96,25 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             return new Result<T>(exception);
         }
     }
+    public Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        var result = _context.UpdateOne(entity, cToken);
+        _logger.Debug($"The entity {entity} was updated by {_repositoryInfo}.");
+        return result;
+    }
+
+    public Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        var result = _context.UpdateMany(entities, cToken);
+        _logger.Debug($"The entities {entities} were updated by {_repositoryInfo}.");
+        return result;
+    }
 
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentSql
     {
         var entities = await _context.Delete(filter, cToken);
 
-        _logger.Trace($"The entities {entities} were deleted by {_repositoryInfo}.");
+        _logger.Debug($"The entities {entities} were deleted by {_repositoryInfo}.");
 
         return entities;
     }
@@ -117,6 +130,19 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         {
             return new Result<T>(exception);
         }
+    }
+    public Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        var result = _context.DeleteOne(entity, cToken);
+        _logger.Debug($"The entity {entity} was deleted by {_repositoryInfo}.");
+        return result;
+    }
+
+    public Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        var result = _context.DeleteMany(entities, cToken);
+        _logger.Debug($"The entities {entities} were deleted by {_repositoryInfo}.");
+        return result;
     }
     #endregion
 }

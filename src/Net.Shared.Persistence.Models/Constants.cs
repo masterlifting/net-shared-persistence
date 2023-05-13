@@ -7,15 +7,11 @@ public static class Constants
         public enum ProcessStatuses
         {
             Error = -1,
-            Draft = 1,
+            None = 1,
+            Draft,
             Ready,
             Processing,
             Processed
-        }
-        public enum ContextCommands
-        {
-            Set,
-            Inc
         }
     }
 }
