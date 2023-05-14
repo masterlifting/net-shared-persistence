@@ -50,7 +50,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var result = await _context.Update(filter, updater, cToken);
+        var result = await _context.Update(filter, updater, limit, cToken);
 
         _logger.Trace($"The processable data were updated and received. Items count: {result.Length}.");
 
@@ -73,7 +73,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var result = await _context.Update(filter, updater, cToken);
+        var result = await _context.Update(filter, updater, limit, cToken);
 
         _logger.Trace($"The unprocessed data were updated and received. Items count: {result.Length}.");
 

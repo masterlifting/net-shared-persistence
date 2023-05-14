@@ -91,6 +91,14 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
 
         return entities;
     }
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updaters, int limit, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        var entities = await _context.Update(filter, updaters, limit, cToken);
+
+        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
+
+        return entities;
+    }
     public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try

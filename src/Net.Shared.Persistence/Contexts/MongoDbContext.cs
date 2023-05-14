@@ -117,6 +117,55 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 Dispose();
         }
     }
+
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, int limit, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        try
+        {
+            if (!_isExternalTransaction && _session is null)
+            {
+                _session = await _client.StartSessionAsync(null, cToken);
+                _session.StartTransaction();
+            }
+
+            var collection = GetCollection<T>();
+
+            var documents = collection.AsQueryable().Where(filter).Take(limit).ToArray();
+
+            if (!documents.Any())
+                return documents;
+
+            foreach (var document in documents)
+            {
+                updater(document);
+
+                var replaceOptions = new ReplaceOptions
+                {
+                    IsUpsert = false
+                };
+
+                var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
+            }
+
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
+                await _session.CommitTransactionAsync(cToken);
+
+            return documents;
+        }
+        catch (Exception exception)
+        {
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
+                await _session.AbortTransactionAsync(cToken);
+
+            throw new PersistenceException(exception);
+        }
+        finally
+        {
+            if (!_isExternalTransaction)
+                Dispose();
+        }
+    }
+
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
         try
