@@ -8,6 +8,7 @@ using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Repositories.Sql;
 using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Exceptions;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
@@ -57,9 +58,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             await CreateOne(entity, cToken);
             return new Result<T>(new[] { entity });
         }
-        catch (Exception exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
+        }
+        catch (Exception exception)
+        {
+            return new Result<T>(new PersistenceException(exception));
         }
     }
     public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentSql
@@ -69,9 +74,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             await CreateMany(entities, cToken);
             return new Result<T>(entities);
         }
-        catch (Exception exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
+        }
+        catch (Exception exception)
+        {
+            return new Result<T>(new PersistenceException(exception));
         }
     }
 
@@ -91,9 +100,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
             return new Result<T>(entities);
         }
-        catch (Exception exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
+        }
+        catch (Exception exception)
+        {
+            return new Result<T>(new PersistenceException(exception));
         }
     }
     public Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
@@ -130,9 +143,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
             return new Result<T>(entities);
         }
-        catch (Exception exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
+        }
+        catch (Exception exception)
+        {
+            return new Result<T>(new PersistenceException(exception));
         }
     }
     public Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql

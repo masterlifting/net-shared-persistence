@@ -1,12 +1,12 @@
 ﻿namespace Net.Shared.Persistence.Models.Exceptions;
 
-public sealed class PersistenceException : Net.Shared.Exception
+public sealed class PersistenceException : NetSharedException
 {
     public PersistenceException(string message) : base(message)
     {
     }
 
-    public PersistenceException(System.Exception exception) : base(exception)
+    public PersistenceException(Exception exception) : base(exception)
     {
     }
 }

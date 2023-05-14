@@ -38,7 +38,8 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         var updated = DateTime.UtcNow;
 
         Expression<Func<T, bool>> filter = x =>
-            x.StepId == step.Id
+            x.HostId == null
+            && x.StepId == step.Id
             && x.StatusId == (int)ProcessStatuses.Ready;
 
         var updater = (T x) =>

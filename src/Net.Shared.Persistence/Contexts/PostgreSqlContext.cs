@@ -51,13 +51,27 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        await Set<T>().AddAsync(entity, cToken);
-        await SaveChangesAsync(cToken);
+        try
+        {
+            await Set<T>().AddAsync(entity, cToken);
+            await SaveChangesAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            throw new PersistenceException(exception);
+        }
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        await Set<T>().AddRangeAsync(entities, cToken);
-        await SaveChangesAsync(cToken);
+        try
+        {
+            await Set<T>().AddRangeAsync(entities, cToken);
+            await SaveChangesAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            throw new PersistenceException(exception);
+        }
     }
 
     public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
@@ -82,12 +96,12 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             return entities;
         }
-        catch
+        catch (Exception exception)
         {
             if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.RollbackAsync(cToken);
 
-            throw;
+            throw new PersistenceException(exception);
         }
         finally
         {
@@ -98,13 +112,27 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
-        base.Set<T>().Update(entity);
-        await SaveChangesAsync(cToken);
+        try
+        {
+            base.Set<T>().Update(entity);
+            await SaveChangesAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            throw new PersistenceException(exception);
+        }
     }
     public async Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
-        base.Set<T>().UpdateRange(entities);
-        await SaveChangesAsync(cToken);
+        try
+        {
+            base.Set<T>().UpdateRange(entities);
+            await SaveChangesAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            throw new PersistenceException(exception);
+        }
     }
 
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql
@@ -126,11 +154,12 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             return entities;
         }
-        catch
+        catch (Exception exception)
         {
             if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.RollbackAsync(cToken);
-            throw;
+
+            throw new PersistenceException(exception);
         }
         finally
         {
@@ -141,13 +170,27 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
-        base.Set<T>().Remove(entity);
-        await SaveChangesAsync(cToken);
+        try
+        {
+            base.Set<T>().Remove(entity);
+            await SaveChangesAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            throw new PersistenceException(exception);
+        }
     }
     public async Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
-        base.Set<T>().RemoveRange(entities);
-        await SaveChangesAsync(cToken);
+        try
+        {
+            base.Set<T>().RemoveRange(entities);
+            await SaveChangesAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            throw new PersistenceException(exception);
+        }
     }
 
     public Task StartTransaction(CancellationToken cToken = default)
@@ -171,9 +214,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         {
             await Database.CurrentTransaction.CommitAsync(cToken);
         }
-        catch
+        catch (Exception exception)
         {
-            throw;
+            throw new PersistenceException(exception);
         }
         finally
         {
@@ -190,9 +233,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         {
             await Database.CurrentTransaction.RollbackAsync(cToken);
         }
-        catch
+        catch (Exception exception)
         {
-            throw;
+            throw new PersistenceException(exception);
         }
         finally
         {

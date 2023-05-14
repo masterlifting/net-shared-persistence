@@ -7,6 +7,7 @@ using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Exceptions;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
@@ -56,17 +57,13 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             await CreateOne(entity, cToken);
             return new Result<T>(new[] { entity });
         }
-        catch (MongoBulkWriteException<T> exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
         }
         catch (Exception exception)
         {
-            return new Result<T>(exception);
-        }
-        catch
-        {
-            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't created by repository '{_repositoryInfo}'."));
+            return new Result<T>(new PersistenceException(exception));
         }
     }
     public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
@@ -76,17 +73,13 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             await CreateMany(entities, cToken);
             return new Result<T>(entities);
         }
-        catch (MongoBulkWriteException<T> exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
         }
         catch (Exception exception)
         {
-            return new Result<T>(exception);
-        }
-        catch
-        {
-            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't created by repository '{_repositoryInfo}'."));
+            return new Result<T>(new PersistenceException(exception));
         }
     }
 
@@ -105,17 +98,13 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             var entities = await Update(filter, updaters, cToken);
             return new Result<T>(entities);
         }
-        catch (MongoBulkWriteException<T> exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
         }
         catch (Exception exception)
         {
-            return new Result<T>(exception);
-        }
-        catch
-        {
-            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't updated by repository '{_repositoryInfo}'."));
+            return new Result<T>(new PersistenceException(exception));
         }
     }
 
@@ -134,17 +123,13 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             var entities = await Delete(filter, cToken);
             return new Result<T>(entities);
         }
-        catch (MongoBulkWriteException<T> exception)
+        catch (PersistenceException exception)
         {
             return new Result<T>(exception);
         }
         catch (Exception exception)
         {
-            return new Result<T>(exception);
-        }
-        catch
-        {
-            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't deleted by repository '{_repositoryInfo}'."));
+            return new Result<T>(new PersistenceException(exception));
         }
     }
     #endregion

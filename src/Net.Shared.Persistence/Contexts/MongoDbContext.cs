@@ -44,10 +44,31 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
         Task.Run(() => SetEntity<T>().SingleOrDefault(filter), cToken);
 
-    public Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
-        GetCollection<T>().InsertOneAsync(entity, null, cToken);
-    public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql =>
-        GetCollection<T>().InsertManyAsync(entities, null, cToken);
+    public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    {
+        try
+        {
+            await GetCollection<T>().InsertOneAsync(entity, null, cToken);
+            return;
+        }
+        catch (MongoException exception)
+        {
+            throw new PersistenceException(exception);
+        }
+    }
+
+    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        try
+        {
+            await GetCollection<T>().InsertManyAsync(entities, null, cToken);
+            return;
+        }
+        catch (MongoException exception)
+        {
+            throw new PersistenceException(exception);
+        }
+    }
 
     public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
     {
@@ -83,11 +104,12 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             return documents;
         }
-        catch
+        catch (Exception exception)
         {
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
-            throw;
+
+            throw new PersistenceException(exception);
         }
         finally
         {
@@ -119,11 +141,12 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             return documents;
         }
-        catch
+        catch (Exception exception)
         {
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
-            throw;
+
+            throw new PersistenceException(exception);
         }
         finally
         {
