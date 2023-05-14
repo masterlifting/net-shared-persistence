@@ -106,7 +106,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         var result = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The processed data were updated. Items count: {result.Length}.");
+        _logger.Trace($"The processed data of the '{typeof(T).Name}' were updated. Items count: {result.Length}.");
 
         return;
     }

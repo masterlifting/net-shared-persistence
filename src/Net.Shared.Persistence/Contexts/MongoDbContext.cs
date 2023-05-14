@@ -114,10 +114,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         finally
         {
             if (!_isExternalTransaction)
-            {
-                _session?.Dispose();
-                _session = null;
-            }
+                Dispose();
         }
     }
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
@@ -154,10 +151,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         finally
         {
             if (!_isExternalTransaction)
-            {
-                _session?.Dispose();
-                _session = null;
-            }
+                Dispose();
         }
     }
 
@@ -179,15 +173,14 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         {
             await _session.CommitTransactionAsync(cToken);
         }
-        catch
+        catch (Exception exception)
         {
-            throw;
+            throw new PersistenceException(exception);
         }
         finally
         {
             _isExternalTransaction = false;
-            _session.Dispose();
-            _session = null;
+            Dispose();
         }
     }
     public async Task RollbackTransaction(CancellationToken cToken = default)
@@ -198,15 +191,14 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         {
             await _session.AbortTransactionAsync(cToken);
         }
-        catch
+        catch (Exception exception)
         {
-            throw;
+            throw new PersistenceException(exception);
         }
         finally
         {
             _isExternalTransaction = false;
-            _session.Dispose();
-            _session = null;
+            Dispose();
         }
     }
 
