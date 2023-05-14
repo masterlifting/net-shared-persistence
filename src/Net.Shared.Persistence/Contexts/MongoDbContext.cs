@@ -114,7 +114,10 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         finally
         {
             if (!_isExternalTransaction)
+            {
                 _session?.Dispose();
+                _session = null;
+            }
         }
     }
     public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
@@ -151,7 +154,10 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         finally
         {
             if (!_isExternalTransaction)
+            {
                 _session?.Dispose();
+                _session = null;
+            }
         }
     }
 
@@ -181,6 +187,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         {
             _isExternalTransaction = false;
             _session.Dispose();
+            _session = null;
         }
     }
     public async Task RollbackTransaction(CancellationToken cToken = default)
@@ -199,10 +206,15 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         {
             _isExternalTransaction = false;
             _session.Dispose();
+            _session = null;
         }
     }
 
-    public void Dispose() => _session?.Dispose();
+    public void Dispose()
+    {
+        _session?.Dispose();
+        _session = null;
+    }
 }
 public sealed class MongoDbBuilder
 {
