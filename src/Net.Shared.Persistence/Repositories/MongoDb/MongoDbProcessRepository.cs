@@ -35,16 +35,18 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         Task.Run(() => _context.SetEntity<T>().ToArray());
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
+        var updated = DateTime.UtcNow;
+
         Expression<Func<T, bool>> filter = x =>
-            x.HostId == hostId
-            && x.StepId == step.Id
+            x.StepId == step.Id
             && x.StatusId == (int)ProcessStatuses.Ready;
 
         var updater = (T x) =>
         {
-            x.Updated = DateTime.UtcNow;
+            x.HostId = hostId;
             x.StatusId = (int)ProcessStatuses.Processing;
             x.Attempt++;
+            x.Updated = updated;
         };
 
         var result = await _context.Update(filter, updater, cToken);
@@ -55,6 +57,8 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
+        var updated = DateTime.UtcNow;
+
         Expression<Func<T, bool>> filter = x =>
             x.HostId == hostId
             && x.StepId == step.Id
@@ -63,14 +67,14 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         var updater = (T x) =>
         {
-            x.Updated = DateTime.UtcNow;
             x.StatusId = (int)ProcessStatuses.Processing;
             x.Attempt++;
+            x.Updated = updated;
         };
 
         var result = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The unprocessed data were updated and received. Items count: {result}.");
+        _logger.Trace($"The unprocessed data were updated and received. Items count: {result.Length}.");
 
         return result;
     }
@@ -101,7 +105,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         var result = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The processed data were updated. Items count: {result}.");
+        _logger.Trace($"The processed data were updated. Items count: {result.Length}.");
 
         return;
     }

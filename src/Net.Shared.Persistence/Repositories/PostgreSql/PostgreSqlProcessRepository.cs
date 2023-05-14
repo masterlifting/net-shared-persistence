@@ -38,11 +38,11 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var updatedCount = await _context.SetEntity<T>()
             .Where(x =>
-                x.HostId == hostId
-                && x.StepId == step.Id
+                x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Ready)
             .Take(limit)
             .ExecuteUpdateAsync(x => x
+                .SetProperty(y => y.HostId, hostId)
                 .SetProperty(y => y.StatusId, (int)ProcessStatuses.Processing)
                 .SetProperty(y => y.Attempt, y => y.Attempt + 1)
                 .SetProperty(y => y.Updated, updated)
@@ -122,7 +122,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var result = await _context.Update(filter, updater, cToken);
 
-        _logger.Trace($"The processed data {result} were updated.");
+        _logger.Trace($"The processed data were updated. Items count: {result.Length}.");
     }
     #endregion
 }

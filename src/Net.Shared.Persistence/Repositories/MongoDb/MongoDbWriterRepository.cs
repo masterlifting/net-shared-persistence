@@ -17,7 +17,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         _logger = logger;
         _context = context;
         Context = context;
-        _repositoryInfo = $"MongoDb repository {GetHashCode()}.'";
+        _repositoryInfo = $"MongoDb {GetHashCode()}";
     }
 
     #region PRIVATE FIELDS
@@ -35,19 +35,19 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         await _context.CreateOne(entity, cToken);
 
-        _logger.Debug($"The entity {entity} was created by {_repositoryInfo}.");
+        _logger.Debug($"The entity '{typeof(T).Name}' was created by repository '{_repositoryInfo}'.");
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         if (!entities.Any())
         {
-            _logger.Warning($"The entities {entities} were not created by {_repositoryInfo} because the collection is empty.");
+            _logger.Warning($"The entities '{typeof(T)}' weren't created by repository '{_repositoryInfo}' because the collection is empty.");
             return;
         }
 
         await _context.CreateMany(entities, cToken);
 
-        _logger.Debug($"The entities {entities} were created by {_repositoryInfo}.");
+        _logger.Debug($"The entities '{typeof(T).Name}' were created by repository '{_repositoryInfo}'. Items count: {entities.Count}.");
     }
     public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
     {
@@ -56,9 +56,17 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             await CreateOne(entity, cToken);
             return new Result<T>(new[] { entity });
         }
+        catch (MongoBulkWriteException<T> exception)
+        {
+            return new Result<T>(exception);
+        }
         catch (Exception exception)
         {
             return new Result<T>(exception);
+        }
+        catch
+        {
+            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't created by repository '{_repositoryInfo}'."));
         }
     }
     public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
@@ -68,9 +76,17 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             await CreateMany(entities, cToken);
             return new Result<T>(entities);
         }
+        catch (MongoBulkWriteException<T> exception)
+        {
+            return new Result<T>(exception);
+        }
         catch (Exception exception)
         {
             return new Result<T>(exception);
+        }
+        catch
+        {
+            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't created by repository '{_repositoryInfo}'."));
         }
     }
 
@@ -78,7 +94,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         var entities = await _context.Update(filter, updaters, cToken);
 
-        _logger.Debug($"The entities {entities} were updated by {_repositoryInfo}.");
+        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
 
         return entities;
     }
@@ -89,9 +105,17 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             var entities = await Update(filter, updaters, cToken);
             return new Result<T>(entities);
         }
+        catch (MongoBulkWriteException<T> exception)
+        {
+            return new Result<T>(exception);
+        }
         catch (Exception exception)
         {
             return new Result<T>(exception);
+        }
+        catch
+        {
+            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't updated by repository '{_repositoryInfo}'."));
         }
     }
 
@@ -99,7 +123,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         var entities = await _context.Delete(filter, cToken);
 
-        _logger.Debug($"The entities {entities} were deleted by {_repositoryInfo}.");
+        _logger.Debug($"The entities '{typeof(T).Name}' were deleted by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
 
         return entities;
     }
@@ -110,9 +134,17 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             var entities = await Delete(filter, cToken);
             return new Result<T>(entities);
         }
+        catch (MongoBulkWriteException<T> exception)
+        {
+            return new Result<T>(exception);
+        }
         catch (Exception exception)
         {
             return new Result<T>(exception);
+        }
+        catch
+        {
+            return new Result<T>(new System.Exception($"Unhandle exception for entities '{typeof(T).Name}' weren't deleted by repository '{_repositoryInfo}'."));
         }
     }
     #endregion
