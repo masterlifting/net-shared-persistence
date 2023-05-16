@@ -8,6 +8,7 @@ using MongoDB.Driver.Linq;
 
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Models.Contexts;
 using Net.Shared.Persistence.Models.Exceptions;
 using Net.Shared.Persistence.Models.Settings.Connections;
 
@@ -56,7 +57,6 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             throw new PersistenceException(exception);
         }
     }
-
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
@@ -70,7 +70,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -79,22 +79,38 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
             }
-
             var collection = GetCollection<T>();
 
-            var documents = collection.AsQueryable().Where(filter).ToArray();
+            var query = collection.AsQueryable().Where(filter);
+
+            if (options is not null)
+            {
+                if (options.Limit > 0)
+                    query = query.Take(options.Limit);
+
+                if (options.OrderSelector is not null)
+                {
+                    var parameter = Expression.Parameter(typeof(T), "x");
+                    var property = Expression.Property(parameter, options.OrderSelector);
+                    var lambda = Expression.Lambda<Func<T, object>>(property, parameter);
+                    
+                    query = options.OrderIsAsc ? query.OrderBy(lambda) : query.OrderByDescending(lambda);
+                }
+            }
+
+            var documents = query.ToArray();
 
             if (!documents.Any())
                 return documents;
+            
+            var replaceOptions = new ReplaceOptions
+            {
+                IsUpsert = false
+            };
 
             foreach (var document in documents)
             {
                 updater(document);
-
-                var replaceOptions = new ReplaceOptions
-                {
-                    IsUpsert = false
-                };
 
                 var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
             }
@@ -117,8 +133,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 Dispose();
         }
     }
-
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, int limit, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -130,27 +145,18 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             var collection = GetCollection<T>();
 
-            var documents = collection.AsQueryable().Where(filter).Take(limit).ToArray();
-
-            if (!documents.Any())
-                return documents;
-
-            foreach (var document in documents)
+            var replaceOptions = new ReplaceOptions
             {
-                updater(document);
+                IsUpsert = false
+            };
 
-                var replaceOptions = new ReplaceOptions
-                {
-                    IsUpsert = false
-                };
-
+            foreach (var document in data)
+            {
                 var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
             }
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
-
-            return documents;
         }
         catch (Exception exception)
         {

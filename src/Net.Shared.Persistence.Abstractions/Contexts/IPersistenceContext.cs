@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Abstractions.Contexts;
 
@@ -15,7 +16,8 @@ public interface IPersistenceContext<TEntity> : IDisposable where TEntity : IPer
     Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity;
     Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity;
 
-    Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, TEntity;
+    Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, TEntity;
+    Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, TEntity;
 
     Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;
 

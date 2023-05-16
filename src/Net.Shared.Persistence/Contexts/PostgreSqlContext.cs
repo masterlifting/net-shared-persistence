@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Models.Contexts;
 using Net.Shared.Persistence.Models.Exceptions;
 using Net.Shared.Persistence.Models.Settings.Connections;
 
@@ -74,14 +75,31 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
-            var entities = await FindMany(filter, cToken);
+            var query = Set<T>().Where(filter);
+
+            if(options is not null)
+            {
+                if(options.Limit > 0)
+                    query = query.Take(options.Limit);
+                
+                if(options.OrderSelector is not null)
+                {
+                    var parameter = Expression.Parameter(typeof(T), "x");
+                    var property = Expression.Property(parameter, options.OrderSelector);
+                    var lambda = Expression.Lambda<Func<T, object>>(property, parameter);
+                    
+                    query = options.OrderIsAsc ? query.OrderBy(lambda) : query.OrderByDescending(lambda);
+                }
+            }
+
+            var entities = await query.ToArrayAsync(cToken);
 
             if (!entities.Any())
                 return entities;
@@ -109,7 +127,35 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
+    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        try
+        {
+            if (!_isExternalTransaction && Database.CurrentTransaction is null)
+                await Database.BeginTransactionAsync(cToken);
 
+            //TOTO: Implement improves for update many
+
+           Set<T>().UpdateRange(data);
+            await SaveChangesAsync(cToken);
+
+            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.CommitAsync(cToken);
+        }
+        catch (Exception exception)
+        {
+            if (Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.RollbackAsync(cToken);
+
+            throw new PersistenceException(exception);
+        }
+        finally
+        {
+            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.DisposeAsync();
+        }
+    }
+    
     public async Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
         try

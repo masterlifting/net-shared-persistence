@@ -8,6 +8,7 @@ using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Repositories.Sql;
 using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Contexts;
 using Net.Shared.Persistence.Models.Exceptions;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
@@ -84,19 +85,19 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
-        var entities = await _context.Update(filter, updater, cToken);
+        var entities = await _context.Update(filter, updater, options, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
-            var entities = await Update(filter, updaters, cToken);
+            var entities = await Update(filter, updaters, options, cToken);
 
             return new Result<T>(entities);
         }
@@ -109,6 +110,30 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             return new Result<T>(new PersistenceException(exception));
         }
     }
+
+    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        await _context.Update(filter, data, options, cToken);
+
+        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {data.Count()}.");
+    }
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    {
+        try
+        {
+            await Update(filter, data, options, cToken);
+            return new Result<T>(data);
+        }
+        catch (PersistenceException exception)
+        {
+            return new Result<T>(exception);
+        }
+        catch (Exception exception)
+        {
+            return new Result<T>(new PersistenceException(exception));
+        }
+    }
+
     public Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
         var result = _context.UpdateOne(entity, cToken);
@@ -117,7 +142,6 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
         return result;
     }
-
     public Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
         var result = _context.UpdateMany(entities, cToken);
@@ -152,13 +176,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             return new Result<T>(new PersistenceException(exception));
         }
     }
+   
     public Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
         var result = _context.DeleteOne(entity, cToken);
         _logger.Debug($"The entity '{typeof(T).Name}' was deleted by repository '{_repositoryInfo}'.");
         return result;
     }
-
     public Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
         var result = _context.DeleteMany(entities, cToken);

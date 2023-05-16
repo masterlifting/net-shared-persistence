@@ -7,6 +7,7 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Contexts;
 
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
@@ -50,11 +51,12 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var result = await _context.Update(filter, updater, limit, cToken);
+        var options = new PersistenceOptions
+        { 
+            Limit = limit
+        };
 
-        _logger.Trace($"The processable data were updated and received. Items count: {result.Length}.");
-
-        return result;
+        return await _context.Update(filter, updater, options, cToken);
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
@@ -73,11 +75,12 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var result = await _context.Update(filter, updater, limit, cToken);
+        var options = new PersistenceOptions
+        {
+            Limit = limit
+        };
 
-        _logger.Trace($"The unprocessed data were updated and received. Items count: {result.Length}.");
-
-        return result;
+        return await _context.Update(filter, updater, options, cToken);
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
@@ -86,29 +89,24 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         Expression<Func<T, bool>> filter = x =>
             x.HostId == hostId
             && x.StepId == entity.StepId
-            && x.Attempt == entity.Attempt
             && x.Updated == entity.Updated;
 
         var updated = DateTime.UtcNow;
 
-        var updater = (T x) =>
+        foreach(var item in entities)
         {
-            x.Updated = updated;
+            item.Updated = updated;
 
-            if (x.StatusId != (int)ProcessStatuses.Error)
+            if (item.StatusId != (int)ProcessStatuses.Error)
             {
-                x.Error = null;
+                item.Error = null;
 
                 if (step is not null)
-                    x.StepId = step.Id;
+                    item.StepId = step.Id;
             }
         };
 
-        var result = await _context.Update(filter, updater, cToken);
-
-        _logger.Trace($"The processed data of the '{typeof(T).Name}' were updated. Items count: {result.Length}.");
-
-        return;
+        await _context.Update(filter, entities, null, cToken);
     }
     #endregion
 }

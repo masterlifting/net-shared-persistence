@@ -57,8 +57,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
-        _logger.Trace($"The processable data were updated and received. Items count - {result.Length}.");
-
         if (result.Length != updatedCount)
             _logger.Warning($"The processable data were updated. Items count - {updatedCount}, but received - {result.Length}.");
 
@@ -89,8 +87,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
-        _logger.Trace($"The unprocessed data were updated and received. Items count - {result.Length}.");
-
         if (result.Length != updatedCount)
             _logger.Warning($"The unprocessed data were updated. Items count - {updatedCount}, but received - {result.Length}.");
 
@@ -108,22 +104,20 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var updated = DateTime.UtcNow;
 
-        var updater = (T x) =>
+        foreach (var item in entities)
         {
-            x.Updated = updated;
+            item.Updated = updated;
 
-            if (x.StatusId != (int)ProcessStatuses.Error)
+            if (item.StatusId != (int)ProcessStatuses.Error)
             {
-                x.Error = null;
+                item.Error = null;
 
                 if (step is not null)
-                    x.StepId = step.Id;
+                    item.StepId = step.Id;
             }
         };
 
-        var result = await _context.Update(filter, updater, cToken);
-
-        _logger.Trace($"The processed data of the '{typeof(T).Name}' were updated. Items count: {result.Length}.");
+        await _context.Update(filter, entities, null, cToken);
     }
     #endregion
 }

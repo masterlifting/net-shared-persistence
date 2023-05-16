@@ -7,6 +7,7 @@ using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Contexts;
 using Net.Shared.Persistence.Models.Exceptions;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
@@ -83,28 +84,43 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var entities = await _context.Update(filter, updaters, cToken);
+        var entities = await _context.Update(filter, updater, options, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
 
         return entities;
     }
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updaters, int limit, CancellationToken cToken) where T : class, IPersistentNoSql
-    {
-        var entities = await _context.Update(filter, updaters, limit, cToken);
-
-        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
-
-        return entities;
-    }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
-            var entities = await Update(filter, updaters, cToken);
+            var entities = await Update(filter, updater, options, cToken);
             return new Result<T>(entities);
+        }
+        catch (PersistenceException exception)
+        {
+            return new Result<T>(exception);
+        }
+        catch (Exception exception)
+        {
+            return new Result<T>(new PersistenceException(exception));
+        }
+    }
+
+    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        await _context.Update(filter, data, options, cToken);
+
+        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {data.Count()}.");
+    }
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        try
+        {
+            await Update(filter, data, options, cToken);
+            return new Result<T>(data);
         }
         catch (PersistenceException exception)
         {
