@@ -51,7 +51,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var options = new PersistenceOptions
+        var options = new PersistenceQueryOptions
         {
             Limit = limit
         };
@@ -75,7 +75,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var options = new PersistenceOptions
+        var options = new PersistenceQueryOptions
         {
             Limit = limit
         };

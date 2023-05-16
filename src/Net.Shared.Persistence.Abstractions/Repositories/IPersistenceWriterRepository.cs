@@ -14,11 +14,11 @@ public interface IPersistenceWriterRepository<TEntity> where TEntity : class, IP
     Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity;
     Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity;
 
-    Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, TEntity;
-    Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, TEntity;
-    
-    Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, TEntity;
-    Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, TEntity;
+    Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, TEntity;
+    Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, TEntity;
+
+    Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, TEntity;
+    Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, TEntity;
 
     Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;
     Task<Result<T>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity;

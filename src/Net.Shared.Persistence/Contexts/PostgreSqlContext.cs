@@ -43,11 +43,11 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         Set<T>().FindAsync(id, cToken).AsTask();
 
     public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => Set<T>().ToArrayAsync(cToken);
-    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
         Set<T>().Where(filter).ToArrayAsync(cToken);
-    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
         Set<T>().FirstOrDefaultAsync(filter, cToken);
-    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
         Set<T>().SingleOrDefaultAsync(filter, cToken);
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql
@@ -75,7 +75,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
@@ -84,17 +84,17 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             var query = Set<T>().Where(filter);
 
-            if(options is not null)
+            if (options is not null)
             {
-                if(options.Limit > 0)
+                if (options.Limit > 0)
                     query = query.Take(options.Limit);
-                
-                if(options.OrderSelector is not null)
+
+                if (options.OrderSelector is not null)
                 {
                     var parameter = Expression.Parameter(typeof(T), "x");
                     var property = Expression.Property(parameter, options.OrderSelector);
                     var lambda = Expression.Lambda<Func<T, object>>(property, parameter);
-                    
+
                     query = options.OrderIsAsc ? query.OrderBy(lambda) : query.OrderByDescending(lambda);
                 }
             }
@@ -127,7 +127,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
-    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
@@ -136,7 +136,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             //TOTO: Implement improves for update many
 
-           Set<T>().UpdateRange(data);
+            Set<T>().UpdateRange(data);
             await SaveChangesAsync(cToken);
 
             if (!_isExternalTransaction && Database.CurrentTransaction is not null)
@@ -155,7 +155,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
-    
+
     public async Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
@@ -181,7 +181,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         }
     }
 
-    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentSql
+    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
     {
         try
         {

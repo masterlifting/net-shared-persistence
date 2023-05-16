@@ -84,7 +84,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         var entities = await _context.Update(filter, updater, options, cToken);
 
@@ -92,7 +92,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -109,13 +109,13 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         await _context.Update(filter, data, options, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {data.Count()}.");
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {

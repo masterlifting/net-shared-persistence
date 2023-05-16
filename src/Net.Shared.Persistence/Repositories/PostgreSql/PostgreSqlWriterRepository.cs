@@ -85,7 +85,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
         var entities = await _context.Update(filter, updater, options, cToken);
 
@@ -93,7 +93,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updaters, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
@@ -111,13 +111,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         }
     }
 
-    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
         await _context.Update(filter, data, options, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {data.Count()}.");
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
@@ -176,7 +176,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             return new Result<T>(new PersistenceException(exception));
         }
     }
-   
+
     public Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
         var result = _context.DeleteOne(entity, cToken);

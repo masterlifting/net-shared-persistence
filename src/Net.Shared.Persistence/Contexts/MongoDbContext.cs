@@ -38,12 +38,25 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
     public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentNoSql =>
         Task.Run(() => SetEntity<T>().ToArray(), cToken);
-    public Task<T[]> FindMany<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
-            Task.Run(() => SetEntity<T>().Where(filter).ToArray(), cToken);
-    public Task<T?> FindFirst<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
-        Task.Run(() => SetEntity<T>().FirstOrDefault(filter), cToken);
-    public Task<T?> FindSingle<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
-        Task.Run(() => SetEntity<T>().SingleOrDefault(filter), cToken);
+    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    {
+        var query = SetEntity<T>();
+        options.BuildQuery(ref query);
+        return Task.Run(() => query.ToArray(), cToken);
+    }
+
+    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    {
+        var query = SetEntity<T>();
+        options.BuildQuery(ref query);
+        return Task.Run(() => query.FirstOrDefault(), cToken);
+    }
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    {
+        var query = SetEntity<T>();
+        options.BuildQuery(ref query);
+        return Task.Run(() => query.SingleOrDefault(), cToken);
+    }
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
@@ -70,7 +83,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -81,22 +94,9 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             }
             var collection = GetCollection<T>();
 
-            var query = collection.AsQueryable().Where(filter);
+            var query = collection.AsQueryable();
 
-            if (options is not null)
-            {
-                if (options.Limit > 0)
-                    query = query.Take(options.Limit);
-
-                if (options.OrderSelector is not null)
-                {
-                    var parameter = Expression.Parameter(typeof(T), "x");
-                    var property = Expression.Property(parameter, options.OrderSelector);
-                    var lambda = Expression.Lambda<Func<T, object>>(property, parameter);
-
-                    query = options.OrderIsAsc ? query.OrderBy(lambda) : query.OrderByDescending(lambda);
-                }
-            }
+            options.BuildQuery(ref query);
 
             var documents = query.ToArray();
 
@@ -112,7 +112,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             {
                 updater(document);
 
-                var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
+                var result = await collection.ReplaceOneAsync(_session, options.Filter, document, replaceOptions, cToken);
             }
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
@@ -133,7 +133,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 Dispose();
         }
     }
-    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -152,7 +152,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             foreach (var document in data)
             {
-                var result = await collection.ReplaceOneAsync(_session, filter, document, replaceOptions, cToken);
+                var result = await collection.ReplaceOneAsync(_session, options.Filter, document, replaceOptions, cToken);
             }
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
@@ -172,7 +172,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
     }
 
-    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
         try
         {
@@ -182,14 +182,15 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 _session.StartTransaction();
             }
 
-            var collection = GetCollection<T>();
+            var collection = GetCollection<T>().AsQueryable();
+            options.BuildQuery(ref collection);
 
-            var documents = collection.AsQueryable().Where(filter).ToArray();
+            var documents = collection.ToArray();
 
             if (!documents.Any())
                 return documents;
 
-            await collection.DeleteManyAsync(_session, filter, null, cToken);
+            await collection.DeleteManyAsync(_session, options.Filter, null, cToken);
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
