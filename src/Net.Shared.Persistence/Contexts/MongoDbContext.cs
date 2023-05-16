@@ -93,7 +93,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                     var parameter = Expression.Parameter(typeof(T), "x");
                     var property = Expression.Property(parameter, options.OrderSelector);
                     var lambda = Expression.Lambda<Func<T, object>>(property, parameter);
-                    
+
                     query = options.OrderIsAsc ? query.OrderBy(lambda) : query.OrderByDescending(lambda);
                 }
             }
@@ -102,7 +102,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             if (!documents.Any())
                 return documents;
-            
+
             var replaceOptions = new ReplaceOptions
             {
                 IsUpsert = false

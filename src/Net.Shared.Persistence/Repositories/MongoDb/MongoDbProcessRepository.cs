@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 
 using Microsoft.Extensions.Logging;
-using Net.Shared.Extensions.Logging;
+
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
@@ -36,12 +36,12 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         Task.Run(() => _context.SetEntity<T>().ToArray());
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        var updated = DateTime.UtcNow;
-
         Expression<Func<T, bool>> filter = x =>
             x.HostId == null
             && x.StepId == step.Id
             && x.StatusId == (int)ProcessStatuses.Ready;
+
+        var updated = DateTime.UtcNow;
 
         var updater = (T x) =>
         {
@@ -52,7 +52,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         };
 
         var options = new PersistenceOptions
-        { 
+        {
             Limit = limit
         };
 
@@ -60,13 +60,13 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
-        var updated = DateTime.UtcNow;
-
         Expression<Func<T, bool>> filter = x =>
             x.HostId == hostId
             && x.StepId == step.Id
             && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
             && x.Attempt < maxAttempts;
+
+        var updated = DateTime.UtcNow;
 
         var updater = (T x) =>
         {
@@ -93,7 +93,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         var updated = DateTime.UtcNow;
 
-        foreach(var item in entities)
+        foreach (var item in entities)
         {
             item.Updated = updated;
 
@@ -104,7 +104,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                 if (step is not null)
                     item.StepId = step.Id;
             }
-        };
+        }
 
         await _context.Update(filter, entities, null, cToken);
     }
