@@ -11,7 +11,8 @@ public static class Constants
             Draft,
             Ready,
             Processing,
-            Processed
+            Processed,
+            Completed
         }
     }
 }

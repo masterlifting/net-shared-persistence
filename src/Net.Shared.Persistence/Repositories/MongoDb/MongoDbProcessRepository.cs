@@ -78,17 +78,17 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         return await _context.Update(options, updater, cToken);
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        if (step is not null)
+        if (nextStep is not null)
         {
             foreach (var item in data)
             {
                 if (item.StatusId != (int)ProcessStatuses.Error)
                 {
-                    item.StepId = step.Id;
+                    item.StepId = nextStep.Id;
                     item.StatusId = (int)ProcessStatuses.Ready;
                     item.Error = null;
                 }
@@ -101,7 +101,10 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             foreach (var item in data)
             {
                 if (item.StatusId != (int)ProcessStatuses.Error)
+                {
+                    item.StatusId = (int)ProcessStatuses.Completed;
                     item.Error = null;
+                }
 
                 item.Updated = updated;
             }
@@ -113,8 +116,8 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         {
             Filter = x =>
                 x.HostId == hostId
-                && x.StepId == entity.StepId
-                && (x.StatusId == (int)ProcessStatuses.Processed || x.StatusId == (int)ProcessStatuses.Error)
+                && x.StepId == currenttStep.Id
+                && x.StatusId == (int)ProcessStatuses.Processing
         };
 
         await _context.Update(options, data, cToken);

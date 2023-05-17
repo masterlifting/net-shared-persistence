@@ -92,25 +92,34 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         return result;
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        if (step is not null)
+        if (nextStep is not null)
         {
-            foreach (var item in data.Where(x => x.StatusId == (int)ProcessStatuses.Processed))
+            foreach (var item in data)
             {
-                item.StepId = step.Id;
-                item.StatusId = (int)ProcessStatuses.Ready;
-                item.Error = null;
+                if (item.StatusId != (int)ProcessStatuses.Error)
+                {
+                    item.StepId = nextStep.Id;
+                    item.StatusId = (int)ProcessStatuses.Ready;
+                    item.Error = null;
+                }
+
                 item.Updated = updated;
             }
         }
         else
         {
-            foreach (var item in data.Where(x => x.StatusId == (int)ProcessStatuses.Processed))
+            foreach (var item in data)
             {
-                item.Error = null;
+                if (item.StatusId != (int)ProcessStatuses.Error)
+                {
+                    item.StatusId = (int)ProcessStatuses.Completed;
+                    item.Error = null;
+                }
+
                 item.Updated = updated;
             }
         }
@@ -121,8 +130,8 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
         {
             Filter = x =>
                 x.HostId == hostId
-                && x.StepId == entity.StepId
-                && x.Updated == entity.Updated
+                && x.StepId == currenttStep.Id
+                && x.StatusId == (int)ProcessStatuses.Processing
         };
 
         await _context.Update(options, data, cToken);

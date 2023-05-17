@@ -12,19 +12,19 @@ namespace Net.Shared.Persistence.Models.Contexts
 
         public void BuildQuery<TQueryable>(ref TQueryable query) where TQueryable : class, IQueryable<T>
         {
-            query.Where(Filter);
+            query = (TQueryable)query.Where(Filter);
 
             if (OrderBy != null)
-                query.OrderBy(OrderBy);
+                query = (TQueryable)query.OrderBy(OrderBy);
 
             if (Skip.HasValue)
-                query.Skip(Skip.Value);
+                query = (TQueryable)query.Skip(Skip.Value);
 
             if (Take.HasValue)
-                query.Take(Take.Value);
+                query = (TQueryable)query.Take(Take.Value);
 
             if (Selector != null)
-                query.Select(Selector);
+                query = (TQueryable)query.Select(Selector);
         }
     }
 }
