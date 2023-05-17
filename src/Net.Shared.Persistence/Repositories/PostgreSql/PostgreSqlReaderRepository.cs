@@ -43,9 +43,9 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
     public Task<T?> GetCatalogByName<T>(string name, CancellationToken cToken) where T : class, IPersistentCatalog, IPersistentSql =>
         _context.FindSingle<T>(new() { Filter = x => x.Name.Equals(name) }, cToken);
     public Task<Dictionary<int, T>> GetCatalogsDictionaryById<T>(CancellationToken cToken) where T : class, IPersistentCatalog, IPersistentSql =>
-            Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Id));
+            Task.Run(() => _context.SetIQueryable<T>().ToDictionary(x => x.Id));
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken) where T : class, IPersistentCatalog, IPersistentSql =>
-            Task.Run(() => _context.SetEntity<T>().ToDictionary(x => x.Name));
+            Task.Run(() => _context.SetIQueryable<T>().ToDictionary(x => x.Name));
 
     #endregion
 }

@@ -29,7 +29,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         builder.UseNpgsql(_connectionSettings.ConnectionString);
         base.OnConfiguring(builder);
     }
-    public IQueryable<T> SetEntity<T>() where T : class, IPersistentSql => Set<T>();
+    public IQueryable<T> SetIQueryable<T>() where T : class, IPersistentSql => Set<T>();
 
     public string GetTableName<T>() where T : class, IPersistentSql =>
         Model.FindEntityType(typeof(T))?.ShortName() ?? throw new PersistenceException($"Searching a table name {typeof(T).Name} was not found.");
@@ -45,21 +45,21 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => Set<T>().ToArrayAsync(cToken);
     public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        var query = Set<T>();
+        var query = SetIQueryable<T>();
         options.BuildQuery(ref query);
         return query.ToArrayAsync(cToken);
     }
 
     public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        var query = Set<T>();
+        var query = SetIQueryable<T>();
         options.BuildQuery(ref query);
         return query.FirstOrDefaultAsync(cToken);
     }
 
     public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
     {
-        var query = Set<T>();
+        var query = SetIQueryable<T>();
         options.BuildQuery(ref query);
         return query.SingleOrDefaultAsync(cToken);
     }
@@ -96,7 +96,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
-            var query = Set<T>();
+            var query = SetIQueryable<T>();
             options.BuildQuery(ref query);
 
             var entities = await query.ToArrayAsync(cToken);

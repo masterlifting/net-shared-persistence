@@ -1,6 +1,4 @@
-﻿using System.Linq.Expressions;
-
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
@@ -34,26 +32,26 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
     }
 
-    public IQueryable<T> SetEntity<T>() where T : class, IPersistentNoSql => SetCollection<T>();
+    public IQueryable<T> SetIQueryable<T>() where T : class, IPersistentNoSql => SetCollection<T>();
 
     public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentNoSql =>
-        Task.Run(() => SetEntity<T>().ToArray(), cToken);
+        Task.Run(() => SetIQueryable<T>().ToArray(), cToken);
     public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
-        var query = SetEntity<T>();
+        var query = SetIQueryable<T>();
         options.BuildQuery(ref query);
         return Task.Run(() => query.ToArray(), cToken);
     }
 
     public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
-        var query = SetEntity<T>();
+        var query = SetIQueryable<T>();
         options.BuildQuery(ref query);
         return Task.Run(() => query.FirstOrDefault(), cToken);
     }
     public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
-        var query = SetEntity<T>();
+        var query = SetIQueryable<T>();
         options.BuildQuery(ref query);
         return Task.Run(() => query.SingleOrDefault(), cToken);
     }

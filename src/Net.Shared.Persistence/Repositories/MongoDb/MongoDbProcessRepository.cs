@@ -31,7 +31,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
     #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcessStep =>
-        Task.Run(() => _context.SetEntity<T>().ToArray());
+        Task.Run(() => _context.SetIQueryable<T>().ToArray());
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;

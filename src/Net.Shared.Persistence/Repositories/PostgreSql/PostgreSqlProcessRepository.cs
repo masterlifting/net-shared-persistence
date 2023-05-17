@@ -31,12 +31,12 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
     #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcessStep =>
-        _context.SetEntity<T>().ToArrayAsync(cToken);
+        _context.SetIQueryable<T>().ToArrayAsync(cToken);
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        var updatedCount = await _context.SetEntity<T>()
+        var updatedCount = await _context.SetIQueryable<T>()
             .Where(x =>
                 x.HostId == null
                 && x.StepId == step.Id
@@ -49,7 +49,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
-        var result = await _context.SetEntity<T>()
+        var result = await _context.SetIQueryable<T>()
             .Where(x =>
                 x.HostId == hostId
                 && x.StepId == step.Id
@@ -66,7 +66,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
     {
         var updated = DateTime.UtcNow;
 
-        var updatedCount = await _context.SetEntity<T>()
+        var updatedCount = await _context.SetIQueryable<T>()
             .Where(x =>
                 x.HostId == hostId
                 && x.StepId == step.Id
@@ -79,7 +79,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
-        var result = await _context.SetEntity<T>()
+        var result = await _context.SetIQueryable<T>()
             .Where(x =>
                 x.HostId == hostId
                 && x.StepId == step.Id

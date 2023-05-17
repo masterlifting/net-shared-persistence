@@ -5,7 +5,7 @@ namespace Net.Shared.Persistence.Abstractions.Contexts;
 
 public interface IPersistenceContext<TEntity> : IDisposable where TEntity : IPersistent
 {
-    IQueryable<T> SetEntity<T>() where T : class, TEntity;
+    IQueryable<T> SetIQueryable<T>() where T : class, TEntity;
 
     Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, TEntity;
     Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
