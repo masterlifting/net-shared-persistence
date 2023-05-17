@@ -242,7 +242,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public async Task RollbackTransaction(CancellationToken cToken = default)
     {
         if (_session?.IsInTransaction != true)
-            throw new PersistenceException("The transaction session was not found");
+            return;
+
         try
         {
             await _session.AbortTransactionAsync(cToken);

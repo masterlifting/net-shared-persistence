@@ -273,7 +273,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public async Task RollbackTransaction(CancellationToken cToken = default)
     {
         if (Database.CurrentTransaction is null)
-            throw new PersistenceException("No transaction to rollback.");
+            return;
 
         try
         {
