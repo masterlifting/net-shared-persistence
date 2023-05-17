@@ -84,19 +84,19 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var entities = await _context.Update(filter, updater, options, cToken);
+        var entities = await _context.Update(options, updater, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, Action<T> updater, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryUpdate<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
-            var entities = await Update(filter, updater, options, cToken);
+            var entities = await Update(options, updater, cToken);
             return new Result<T>(entities);
         }
         catch (PersistenceException exception)
@@ -109,17 +109,17 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task Update<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        await _context.Update(filter, data, options, cToken);
+        await _context.Update(options, data, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {data.Count()}.");
     }
-    public async Task<Result<T>> TryUpdate<T>(Expression<Func<T, bool>> filter, IEnumerable<T> data, PersistenceQueryOptions? options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryUpdate<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
-            await Update(filter, data, options, cToken);
+            await Update(options, data, cToken);
             return new Result<T>(data);
         }
         catch (PersistenceException exception)
@@ -132,19 +132,19 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Delete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var entities = await _context.Delete(filter, cToken);
+        var entities = await _context.Delete(options, cToken);
 
         _logger.Debug($"The entities '{typeof(T).Name}' were deleted by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
 
         return entities;
     }
-    public async Task<Result<T>> TryDelete<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
-            var entities = await Delete(filter, cToken);
+            var entities = await Delete(options, cToken);
             return new Result<T>(entities);
         }
         catch (PersistenceException exception)

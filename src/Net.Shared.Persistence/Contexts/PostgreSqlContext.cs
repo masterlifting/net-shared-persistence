@@ -43,12 +43,26 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         Set<T>().FindAsync(id, cToken).AsTask();
 
     public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentSql => Set<T>().ToArrayAsync(cToken);
-    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        Set<T>().Where(filter).ToArrayAsync(cToken);
-    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        Set<T>().FirstOrDefaultAsync(filter, cToken);
-    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
-        Set<T>().SingleOrDefaultAsync(filter, cToken);
+    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
+    {
+        var query = Set<T>();
+        options.BuildQuery(ref query);
+        return query.ToArrayAsync(cToken);
+    }
+
+    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
+    {
+        var query = Set<T>();
+        options.BuildQuery(ref query);
+        return query.FirstOrDefaultAsync(cToken);
+    }
+
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
+    {
+        var query = Set<T>();
+        options.BuildQuery(ref query);
+        return query.SingleOrDefaultAsync(cToken);
+    }
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql
     {
@@ -82,22 +96,8 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
-            var query = Set<T>().Where(filter);
-
-            if (options is not null)
-            {
-                if (options.Limit > 0)
-                    query = query.Take(options.Limit);
-
-                if (options.OrderSelector is not null)
-                {
-                    var parameter = Expression.Parameter(typeof(T), "x");
-                    var property = Expression.Property(parameter, options.OrderSelector);
-                    var lambda = Expression.Lambda<Func<T, object>>(property, parameter);
-
-                    query = options.OrderIsAsc ? query.OrderBy(lambda) : query.OrderByDescending(lambda);
-                }
-            }
+            var query = Set<T>();
+            options.BuildQuery(ref query);
 
             var entities = await query.ToArrayAsync(cToken);
 
@@ -188,7 +188,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
-            var entities = await FindMany(filter, cToken);
+            var entities = await FindMany(options, cToken);
 
             if (!entities.Any())
                 return entities;

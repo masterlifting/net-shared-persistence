@@ -182,10 +182,12 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 _session.StartTransaction();
             }
 
-            var collection = GetCollection<T>().AsQueryable();
-            options.BuildQuery(ref collection);
+            var collection = GetCollection<T>();
 
-            var documents = collection.ToArray();
+            var query = collection.AsQueryable();
+            options.BuildQuery(ref query);
+
+            var documents = query.ToArray();
 
             if (!documents.Any())
                 return documents;

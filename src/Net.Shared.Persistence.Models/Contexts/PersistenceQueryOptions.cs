@@ -4,16 +4,15 @@ namespace Net.Shared.Persistence.Models.Contexts
 {
     public sealed class PersistenceQueryOptions<T> where T : class
     {
-        public int? Skip { get; set; }
-        public int? Take { get; set; }
-        public Expression<Func<T, bool>>? Filter { get; set; }
+        public Expression<Func<T, bool>> Filter { get; set; } = _ => true;
         public Expression<Func<T, object>>? OrderBy { get; set; }
         public Expression<Func<T, object>>? Selector { get; set; }
+        public int? Take { get; set; }
+        public int? Skip { get; set; }
 
-        public void BuildQuery(ref IQueryable<T> query)
+        public void BuildQuery<TQueryable>(ref TQueryable query) where TQueryable : class, IQueryable<T>
         {
-            if (Filter != null)
-                query.Where(Filter);
+            query.Where(Filter);
 
             if (OrderBy != null)
                 query.OrderBy(OrderBy);

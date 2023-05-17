@@ -7,6 +7,7 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Contexts;
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
@@ -94,14 +95,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
-        var entity = entities.First();
-
-        Expression<Func<T, bool>> filter = x =>
-            x.HostId == hostId
-            && x.StepId == entity.StepId
-            && x.Attempt == entity.Attempt
-            && x.Updated == entity.Updated;
-
         var updated = DateTime.UtcNow;
 
         foreach (var item in entities)
@@ -115,9 +108,20 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 if (step is not null)
                     item.StepId = step.Id;
             }
+        }
+
+        var entity = entities.First();
+
+        var options = new PersistenceQueryOptions<T>
+        {
+            Filter = x =>
+                x.HostId == hostId
+                && x.StepId == entity.StepId
+                && x.Attempt == entity.Attempt
+                && x.Updated == entity.Updated
         };
 
-        await _context.Update(filter, entities, null, cToken);
+        await _context.Update(options, entities, cToken);
     }
     #endregion
 }
