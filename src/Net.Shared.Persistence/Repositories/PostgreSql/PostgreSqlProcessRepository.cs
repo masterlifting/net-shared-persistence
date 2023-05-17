@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Contexts;
@@ -93,35 +92,40 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         return result;
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep? step, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        foreach (var item in entities)
+        if (step is not null)
         {
-            item.Updated = updated;
-
-            if (item.StatusId != (int)ProcessStatuses.Error)
+            foreach (var item in data.Where(x => x.StatusId == (int)ProcessStatuses.Processed))
+            {
+                item.StepId = step.Id;
+                item.StatusId = (int)ProcessStatuses.Ready;
+                item.Error = null;
+                item.Updated = updated;
+            }
+        }
+        else
+        {
+            foreach (var item in data.Where(x => x.StatusId == (int)ProcessStatuses.Processed))
             {
                 item.Error = null;
-
-                if (step is not null)
-                    item.StepId = step.Id;
+                item.Updated = updated;
             }
         }
 
-        var entity = entities.First();
+        var entity = data.First();
 
         var options = new PersistenceQueryOptions<T>
         {
             Filter = x =>
                 x.HostId == hostId
                 && x.StepId == entity.StepId
-                && x.Attempt == entity.Attempt
                 && x.Updated == entity.Updated
         };
 
-        await _context.Update(options, entities, cToken);
+        await _context.Update(options, data, cToken);
     }
     #endregion
 }
