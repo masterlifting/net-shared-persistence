@@ -7,8 +7,7 @@ public static class Constants
         public enum ProcessStatuses
         {
             Error = -1,
-            None = 1,
-            Draft,
+            Draft = 1,
             Ready,
             Processing,
             Processed,
