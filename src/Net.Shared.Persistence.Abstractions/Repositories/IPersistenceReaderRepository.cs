@@ -13,6 +13,7 @@ public interface IPersistenceReaderRepository<TEntity> where TEntity : class, IP
     Task<T[]> GetCatalogs<T>(CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
     Task<Dictionary<int, T>> GetCatalogsDictionaryById<T>(CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
     Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
-    Task<T?> GetCatalogById<T>(int id, CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
-    Task<T?> GetCatalogByName<T>(string name, CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
+    Task<T> GetCatalogById<T>(int id, CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
+    Task<T> GetCatalogByName<T>(string name, CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
+    Task<T> GetCatalogByEnum<T, TEnum>(TEnum value, CancellationToken cToken) where T : class, TEntity, IPersistentCatalog where TEnum : Enum;
 }
