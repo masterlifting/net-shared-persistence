@@ -267,7 +267,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         finally
         {
             _isExternalTransaction = false;
-            await Database.CurrentTransaction.DisposeAsync();
+            
+            if(Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.DisposeAsync();
         }
     }
     public async Task RollbackTransaction(CancellationToken cToken = default)
@@ -286,7 +288,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         finally
         {
             _isExternalTransaction = false;
-            await Database.CurrentTransaction.DisposeAsync();
+            
+            if(Database.CurrentTransaction is not null)
+                await Database.CurrentTransaction.DisposeAsync();
         }
     }
 }
