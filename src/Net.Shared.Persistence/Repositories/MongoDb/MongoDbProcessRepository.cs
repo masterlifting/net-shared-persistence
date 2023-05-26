@@ -94,7 +94,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                 }
                 else
                 {
-                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the following error: {item.Error}"));
+                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the error: {item.Error}"));
                 }
 
                 item.Updated = updated;
@@ -111,7 +111,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                 }
                 else
                 {
-                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the following error: {item.Error}"));
+                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the error: {item.Error}"));
                 }
 
                 item.Updated = updated;
