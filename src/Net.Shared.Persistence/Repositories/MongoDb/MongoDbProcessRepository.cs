@@ -30,9 +30,9 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
     #endregion
 
     #region PUBLIC METHODS
-    public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcessStep =>
-        Task.Run(() => _context.SetIQueryable<T>().ToArray());
-    public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
+    public Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcessStep =>
+        _context.FindMany<T>(new(), cToken);
+    public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -55,7 +55,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         return await _context.Update(options, updater, cToken);
     }
-    public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -78,7 +78,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         return await _context.Update(options, updater, cToken);
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 

@@ -7,6 +7,6 @@ public interface IPersistenceSqlReaderRepository : IPersistenceReaderRepository<
 {
     IPersistenceSqlContext Context { get; }
 
-    Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql;
-    Task<T?> FindById<T>(object id, CancellationToken cToken) where T : class, IPersistentSql;
+    Task<T?> FindById<T>(object[] id, CancellationToken cToken = default) where T : class, IPersistentSql;
+    Task<T?> FindById<T>(object id, CancellationToken cToken = default) where T : class, IPersistentSql;
 }

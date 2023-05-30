@@ -18,13 +18,15 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     private readonly MongoClient _client;
     private IClientSessionHandle? _session;
     private bool _isExternalTransaction;
+
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
-    private IMongoQueryable<T> SetCollection<T>() where T : class, IPersistentNoSql => GetCollection<T>().AsQueryable();
+    public IQueryable<T> GetQuery<T>() where T : class, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
     protected MongoDbContext(MongoDbConnection connectionSettings)
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
+        
         OnModelCreating(new MongoDbBuilder(_dataBase));
     }
 
@@ -32,33 +34,40 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
     }
 
-    public IQueryable<T> SetIQueryable<T>() where T : class, IPersistentNoSql => SetCollection<T>();
-
-    public Task<T[]> FindAll<T>(CancellationToken cToken) where T : class, IPersistentNoSql =>
-        Task.Run(() => SetIQueryable<T>().ToArray(), cToken);
-    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var query = SetIQueryable<T>();
+        var query = GetQuery<T>();
         options.BuildQuery(ref query);
-        return Task.Run(() => query.ToArray(), cToken);
+        return Task.Run(() => query.Any(), cToken);
     }
 
-    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var query = SetIQueryable<T>();
-        options.Take = 1;
+        var query = GetQuery<T>();
         options.BuildQuery(ref query);
         return Task.Run(() => query.FirstOrDefault(), cToken);
     }
-    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        var query = SetIQueryable<T>();
-        options.Take = 2;
+        var query = GetQuery<T>();
         options.BuildQuery(ref query);
         return Task.Run(() => query.SingleOrDefault(), cToken);
     }
 
-    public async Task CreateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        var query = GetQuery<T>();
+        options.BuildQuery(ref query);
+        return Task.Run(() => query.ToArray(), cToken);
+    }
+    public Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        var query = GetQuery<T>();
+        options.QueryOptions.BuildQuery(ref query);
+        return Task.Run(() => query.Select(options.Selector).ToArray(), cToken);
+    }
+
+    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -94,7 +103,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             }
             var collection = GetCollection<T>();
 
-            var query = collection.AsQueryable();
+            IQueryable<T> query = collection.AsQueryable();
 
             options.BuildQuery(ref query);
 
@@ -172,7 +181,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
     }
 
-    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
+    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -184,7 +193,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             var collection = GetCollection<T>();
 
-            var query = collection.AsQueryable();
+            IQueryable<T> query = collection.AsQueryable();
+
             options.BuildQuery(ref query);
 
             var documents = query.ToArray();
@@ -213,7 +223,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
     }
 
-    public async Task StartTransaction(CancellationToken cToken = default)
+    public async Task StartTransaction(CancellationToken cToken)
     {
         if (_session?.IsInTransaction is true)
             return;
@@ -222,7 +232,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         _session.StartTransaction();
         _isExternalTransaction = true;
     }
-    public async Task CommitTransaction(CancellationToken cToken = default)
+    public async Task CommitTransaction(CancellationToken cToken)
     {
         if (_session?.IsInTransaction != true)
             throw new PersistenceException("The transaction session was not found");
@@ -241,7 +251,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             Dispose();
         }
     }
-    public async Task RollbackTransaction(CancellationToken cToken = default)
+    public async Task RollbackTransaction(CancellationToken cToken)
     {
         if (_session?.IsInTransaction != true)
             return;
@@ -265,13 +275,6 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         _session?.Dispose();
         _session = null;
-    }
-
-    public Task<TResult[]> FindMany<T, TResult>(PersistenceQuerySelectOptions<T, TResult> options, CancellationToken cToken) where T : class, IPersistentNoSql
-    {
-        var _query = SetIQueryable<T>();
-        options.QueryOptions.BuildQuery(ref _query);
-        return Task.Run(() => _query.Select(options.Selector).ToArray(), cToken);
     }
 }
 public sealed class MongoDbBuilder

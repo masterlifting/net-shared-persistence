@@ -7,9 +7,9 @@ public interface IPersistenceSqlWriterRepository : IPersistenceWriterRepository<
 {
     IPersistenceSqlContext Context { get; }
 
-    Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql;
-    Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql;
+    Task UpdateOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql;
+    Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentSql;
 
-    Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql;
-    Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql;
+    Task DeleteOne<T>(T entity, CancellationToken cToken = default) where T : class, IPersistentSql;
+    Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken = default) where T : class, IPersistentSql;
 }
