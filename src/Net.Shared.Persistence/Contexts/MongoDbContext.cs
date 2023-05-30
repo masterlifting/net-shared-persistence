@@ -46,12 +46,14 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
         var query = SetIQueryable<T>();
+        options.Take = 1;
         options.BuildQuery(ref query);
         return Task.Run(() => query.FirstOrDefault(), cToken);
     }
     public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql
     {
         var query = SetIQueryable<T>();
+        options.Take = 2;
         options.BuildQuery(ref query);
         return Task.Run(() => query.SingleOrDefault(), cToken);
     }

@@ -9,6 +9,7 @@ public interface IPersistenceReaderRepository<TEntity> where TEntity : class, IP
     Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
     Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
     Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
+    Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
 
     Task<T[]> GetCatalogs<T>(CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;
     Task<Dictionary<int, T>> GetCatalogsDictionaryById<T>(CancellationToken cToken) where T : class, TEntity, IPersistentCatalog;

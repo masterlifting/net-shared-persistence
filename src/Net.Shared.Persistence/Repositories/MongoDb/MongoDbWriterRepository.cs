@@ -1,6 +1,7 @@
-﻿using System.Linq.Expressions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+
 using MongoDB.Driver;
+
 using Net.Shared.Extensions.Logging;
 using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Contexts;

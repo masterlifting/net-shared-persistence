@@ -6,7 +6,6 @@ namespace Net.Shared.Persistence.Models.Contexts
     {
         public Expression<Func<T, bool>> Filter { get; set; } = _ => true;
         public Expression<Func<T, object>>? OrderBy { get; set; }
-        public Expression<Func<T, object>>? Selector { get; set; }
         public int? Take { get; set; }
         public int? Skip { get; set; }
 
@@ -22,9 +21,6 @@ namespace Net.Shared.Persistence.Models.Contexts
 
             if (Take.HasValue)
                 query = (TQueryable)query.Take(Take.Value);
-
-            if (Selector != null)
-                query = (TQueryable)query.Select(Selector);
         }
     }
 }

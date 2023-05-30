@@ -53,6 +53,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
     {
         var query = SetIQueryable<T>();
+        options.Take = 1;
         options.BuildQuery(ref query);
         return query.FirstOrDefaultAsync(cToken);
     }
@@ -60,6 +61,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql
     {
         var query = SetIQueryable<T>();
+        options.Take = 2;
         options.BuildQuery(ref query);
         return query.SingleOrDefaultAsync(cToken);
     }
