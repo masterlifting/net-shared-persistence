@@ -9,18 +9,23 @@ namespace Net.Shared.Persistence.Models.Contexts
         public int? Take { get; set; }
         public int? Skip { get; set; }
 
-        public void BuildQuery<TQueryable>(ref TQueryable query) where TQueryable : class, IQueryable<T>
+        public void BuildQuery(ref IQueryable<T> query)
         {
-            query = (TQueryable)query.Where(Filter);
+            query = query.Where(Filter);
 
             if (OrderBy != null)
-                query = (TQueryable)query.OrderBy(OrderBy);
+                query = query.OrderBy(OrderBy);
 
             if (Skip.HasValue)
-                query = (TQueryable)query.Skip(Skip.Value);
+                query = query.Skip(Skip.Value);
 
             if (Take.HasValue)
-                query = (TQueryable)query.Take(Take.Value);
+                query = query.Take(Take.Value);
         }
+    }
+    public sealed class PersistenceQuerySelectOptions<T, TResult> where T : class
+    {
+        public PersistenceQueryOptions<T> QueryOptions { get; set; } = new();
+        public Func<T, TResult> Selector { get; set; } = null!;
     }
 }

@@ -266,6 +266,13 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         _session?.Dispose();
         _session = null;
     }
+
+    public Task<TResult[]> FindMany<T, TResult>(PersistenceQuerySelectOptions<T, TResult> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        var _query = SetIQueryable<T>();
+        options.QueryOptions.BuildQuery(ref _query);
+        return Task.Run(() => _query.Select(options.Selector).ToArray(), cToken);
+    }
 }
 public sealed class MongoDbBuilder
 {

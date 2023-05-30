@@ -1,6 +1,7 @@
 ﻿using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Contexts;
@@ -81,6 +82,11 @@ public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
         return name is null
             ? throw new PersistenceException($"Enum {typeof(TEnum).Name} does not contain value {value}")
             : await GetCatalogByName<T>(name, cToken);
+    }
+
+    public Task<TResult> FindMany<T, TResult>(IQueryable<T> query, Func<IQueryable<T>, TResult> selector, CancellationToken cToken) where T : class, IPersistentNoSql
+    {
+        return _context.FindMany(query, selector, cToken);
     }
 
     #endregion
