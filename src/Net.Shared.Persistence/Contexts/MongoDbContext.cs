@@ -26,7 +26,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
-        
+
         OnModelCreating(new MongoDbBuilder(_dataBase));
     }
 

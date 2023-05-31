@@ -32,7 +32,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
     #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcessStep =>
-        _context.GetQuery<T>().ToArrayAsync(cToken);
+        _context.FindMany<T>(new(), cToken);
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;

@@ -281,8 +281,8 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         finally
         {
             _isExternalTransaction = false;
-            
-            if(Database.CurrentTransaction is not null)
+
+            if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
@@ -302,8 +302,8 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         finally
         {
             _isExternalTransaction = false;
-            
-            if(Database.CurrentTransaction is not null)
+
+            if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }

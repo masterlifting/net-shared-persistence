@@ -29,9 +29,9 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
     #region PUBLIC METHODS
 
     #region Spetialized API
-    public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql => 
+    public Task<T?> FindById<T>(object[] id, CancellationToken cToken) where T : class, IPersistentSql =>
         _context.FindById<T>(id, cToken);
-    public Task<T?> FindById<T>(object id, CancellationToken cToken) where T : class, IPersistentSql => 
+    public Task<T?> FindById<T>(object id, CancellationToken cToken) where T : class, IPersistentSql =>
         _context.FindById<T>(id, cToken);
     #endregion
 
@@ -56,13 +56,13 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
         await _context.FindSingle<T>(new() { Filter = x => x.Id == id }, cToken)
         ?? throw new PersistenceException($"Catalog {typeof(T).Name} with id {id} not found");
     public Task<Dictionary<int, T>> GetCatalogsDictionaryById<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentSql =>
-            _context.GetQuery<T>().ToDictionaryAsync(x => x.Id);
+            _context.GetQuery<T>().ToDictionaryAsync(x => x.Id, cToken);
 
     public async Task<T> GetCatalogByName<T>(string name, CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentSql =>
         await _context.FindSingle<T>(new() { Filter = x => x.Name.Equals(name) }, cToken)
         ?? throw new PersistenceException($"Catalog {typeof(T).Name} with name {name} not found");
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentSql =>
-            Task.Run(() => _context.GetQuery<T>().ToDictionary(x => x.Name));
+            _context.GetQuery<T>().ToDictionaryAsync(x => x.Name, cToken);
 
     public async Task<T> GetCatalogByEnum<T, TEnum>(TEnum value, CancellationToken cToken)
         where T : class, IPersistentCatalog, IPersistentSql
@@ -76,12 +76,8 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
     }
     public Task<Dictionary<TEnum, T>> GetCatalogsDictionaryByEnum<T, TEnum>(CancellationToken cToken)
         where T : class, IPersistentCatalog, IPersistentSql
-        where TEnum : Enum
-    {
-        Func<T, TEnum> enumParser = x => (TEnum)Enum.Parse(typeof(TEnum), x.Name.AsSpan());
-
-        return Task.Run(() => _context.GetQuery<T>().ToDictionary(enumParser));
-    }
+        where TEnum : Enum =>
+            _context.GetQuery<T>().ToDictionaryAsync(x => (TEnum)Enum.Parse(typeof(TEnum), x.Name.AsSpan()), cToken);
 
     #endregion
 
