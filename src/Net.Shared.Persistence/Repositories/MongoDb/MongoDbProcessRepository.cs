@@ -1,27 +1,23 @@
-﻿using Microsoft.Extensions.Logging;
-using Net.Shared.Extensions.Logging;
-using Net.Shared.Persistence.Abstractions.Contexts;
+﻿using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
+
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
 public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
 {
-    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository> logger, MongoDbContext context)
+    public MongoDbProcessRepository(MongoDbContext context)
     {
-        _logger = logger;
         _context = context;
         Context = context;
     }
 
     #region PRIVATE FIELDS
-    private readonly ILogger<MongoDbProcessRepository> _logger;
     private readonly MongoDbContext _context;
     #endregion
 
@@ -92,10 +88,6 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                     item.StatusId = (int)ProcessStatuses.Ready;
                     item.Error = null;
                 }
-                else
-                {
-                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the error: {item.Error}"));
-                }
 
                 item.Updated = updated;
             }
@@ -109,16 +101,10 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                     item.StatusId = (int)ProcessStatuses.Completed;
                     item.Error = null;
                 }
-                else
-                {
-                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the error: {item.Error}"));
-                }
 
                 item.Updated = updated;
             }
         }
-
-        var entity = data.First();
 
         var options = new PersistenceQueryOptions<T>
         {

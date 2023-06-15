@@ -1,29 +1,26 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Net.Shared.Extensions.Logging;
+
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
+
 using static Net.Shared.Persistence.Models.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
 public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessRepository
 {
-    public PostgreSqlProcessRepository(ILogger<PostgreSqlProcessRepository> logger, PostgreSqlContext context)
+    public PostgreSqlProcessRepository(PostgreSqlContext context)
     {
-        _logger = logger;
         _context = context;
         Context = context;
     }
 
     #region PRIVATE FIELDS
     private readonly PostgreSqlContext _context;
-    private readonly ILogger _logger;
     #endregion
 
     #region PUBLIC PROPERTIES
@@ -58,9 +55,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
-        if (result.Length != updatedCount)
-            _logger.Warning($"The processable data were updated. Items count - {updatedCount}, but received - {result.Length}.");
-
         return result;
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
@@ -88,9 +82,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
-        if (result.Length != updatedCount)
-            _logger.Warning($"The unprocessed data were updated. Items count - {updatedCount}, but received - {result.Length}.");
-
         return result;
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
@@ -107,10 +98,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                     item.StatusId = (int)ProcessStatuses.Ready;
                     item.Error = null;
                 }
-                else
-                {
-                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the error: {item.Error}"));
-                }
 
                 item.Updated = updated;
             }
@@ -124,16 +111,10 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                     item.StatusId = (int)ProcessStatuses.Completed;
                     item.Error = null;
                 }
-                else
-                {
-                    _logger.Error(new PersistenceException($"Process by step '{currenttStep.Name}' has the error: {item.Error}"));
-                }
 
                 item.Updated = updated;
             }
         }
-
-        var entity = data.First();
 
         var options = new PersistenceQueryOptions<T>
         {

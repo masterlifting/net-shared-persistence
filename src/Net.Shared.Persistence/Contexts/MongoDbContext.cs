@@ -101,6 +101,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
             }
+
             var collection = GetCollection<T>();
 
             IQueryable<T> query = collection.AsQueryable();
@@ -112,17 +113,13 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             if (!documents.Any())
                 return documents;
 
-            var replaceOptions = new ReplaceOptions
-            {
-                IsUpsert = false
-            };
-
             foreach (var document in documents)
             {
                 updater(document);
-
-                var result = await collection.ReplaceOneAsync(_session, options.Filter, document, replaceOptions, cToken);
             }
+
+            await collection.DeleteManyAsync<T>(options.Filter, cToken);
+            await collection.InsertManyAsync(_session, documents, null, cToken);
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
@@ -154,15 +151,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             var collection = GetCollection<T>();
 
-            var replaceOptions = new ReplaceOptions
-            {
-                IsUpsert = false
-            };
-
-            foreach (var document in data)
-            {
-                var result = await collection.ReplaceOneAsync(_session, options.Filter, document, replaceOptions, cToken);
-            }
+            await collection.DeleteManyAsync<T>(options.Filter, cToken);
+            await collection.InsertManyAsync(_session, data, null, cToken);
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
