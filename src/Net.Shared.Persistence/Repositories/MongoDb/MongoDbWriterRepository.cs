@@ -98,6 +98,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         try
         {
             var entities = await Update(options, updater, cToken);
+
             return new Result<T>(entities);
         }
         catch (PersistenceException exception)
@@ -110,51 +111,29 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
-        await _context.Update(options, data, cToken);
+        var count = await _context.Delete(options, cToken);
 
-        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {data.Count()}.");
+        _logger.Debug($"The entities '{typeof(T).Name}' were deleted by repository '{_repositoryInfo}'. Items count: {count}.");
+
+        return count;
     }
-    public async Task<Result<T>> TryUpdate<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
-            await Update(options, data, cToken);
-            return new Result<T>(data);
+            var count = await Delete(options, cToken);
+
+            return new Result<long>(count);
         }
         catch (PersistenceException exception)
         {
-            return new Result<T>(exception);
+            return new Result<long>(exception);
         }
         catch (Exception exception)
         {
-            return new Result<T>(new PersistenceException(exception));
-        }
-    }
-
-    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
-    {
-        var entities = await _context.Delete(options, cToken);
-
-        _logger.Debug($"The entities '{typeof(T).Name}' were deleted by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
-
-        return entities;
-    }
-    public async Task<Result<T>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
-    {
-        try
-        {
-            var entities = await Delete(options, cToken);
-            return new Result<T>(entities);
-        }
-        catch (PersistenceException exception)
-        {
-            return new Result<T>(exception);
-        }
-        catch (Exception exception)
-        {
-            return new Result<T>(new PersistenceException(exception));
+            return new Result<long>(new PersistenceException(exception));
         }
     }
     #endregion

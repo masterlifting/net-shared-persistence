@@ -19,9 +19,8 @@ public interface IPersistenceContext<TEntity> : IDisposable where TEntity : IPer
     Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity;
 
     Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, TEntity;
-    Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, TEntity;
 
-    Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
+    Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity;
 
     Task StartTransaction(CancellationToken cToken);
     Task CommitTransaction(CancellationToken cToken);

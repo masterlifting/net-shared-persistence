@@ -78,33 +78,26 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
     {
         var updated = DateTime.UtcNow;
 
-        if (nextStep is not null)
+        var updater = (T x) =>
         {
-            foreach (var item in data)
-            {
-                if (item.StatusId != (int)ProcessStatuses.Error)
-                {
-                    item.StepId = nextStep.Id;
-                    item.StatusId = (int)ProcessStatuses.Ready;
-                    item.Error = null;
-                }
+            x.Updated = updated;
 
-                item.Updated = updated;
-            }
-        }
-        else
-        {
-            foreach (var item in data)
+            if (x.StatusId != (int)ProcessStatuses.Error)
             {
-                if (item.StatusId != (int)ProcessStatuses.Error)
-                {
-                    item.StatusId = (int)ProcessStatuses.Completed;
-                    item.Error = null;
-                }
+                x.Error = null;
 
-                item.Updated = updated;
+                switch (nextStep)
+                {
+                    case not null:
+                        x.StatusId = (int)ProcessStatuses.Ready;
+                        x.StepId = nextStep.Id;
+                        break;
+                    default:
+                        x.StatusId = (int)ProcessStatuses.Completed;
+                        break;
+                }
             }
-        }
+        };
 
         var options = new PersistenceQueryOptions<T>
         {
@@ -114,7 +107,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                 && x.StatusId == (int)ProcessStatuses.Processing
         };
 
-        await _context.Update(options, data, cToken);
+        await _context.Update(options, updater, cToken);
     }
     #endregion
 }

@@ -113,13 +113,16 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             if (!documents.Any())
                 return documents;
 
+            var replaceOptions = new ReplaceOptions
+            {
+                IsUpsert = true
+            };
+
             foreach (var document in documents)
             {
                 updater(document);
+                await collection.ReplaceOneAsync(_session, options.Filter, document, replaceOptions, cToken);
             }
-
-            await collection.DeleteManyAsync<T>(options.Filter, cToken);
-            await collection.InsertManyAsync(_session, documents, null, cToken);
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
@@ -139,39 +142,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 Dispose();
         }
     }
-    public async Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentNoSql
-    {
-        try
-        {
-            if (!_isExternalTransaction && _session is null)
-            {
-                _session = await _client.StartSessionAsync(null, cToken);
-                _session.StartTransaction();
-            }
 
-            var collection = GetCollection<T>();
-
-            await collection.DeleteManyAsync<T>(options.Filter, cToken);
-            await collection.InsertManyAsync(_session, data, null, cToken);
-
-            if (!_isExternalTransaction && _session?.IsInTransaction is true)
-                await _session.CommitTransactionAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            if (!_isExternalTransaction && _session?.IsInTransaction is true)
-                await _session.AbortTransactionAsync(cToken);
-
-            throw new PersistenceException(exception);
-        }
-        finally
-        {
-            if (!_isExternalTransaction)
-                Dispose();
-        }
-    }
-
-    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -190,14 +162,23 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             var documents = query.ToArray();
 
             if (!documents.Any())
-                return documents;
+                return 0;
 
-            await collection.DeleteManyAsync(_session, options.Filter, null, cToken);
+            var deleteOptions = new DeleteOptions
+            {
+                
+            };
+
+
+            for(int i = 0; i < documents.Length - 1; i++)
+            {
+                await collection.DeleteOneAsync(_session, options.Filter, deleteOptions, cToken);
+            }
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
 
-            return documents;
+            return documents.Length;
         }
         catch (Exception exception)
         {

@@ -15,9 +15,6 @@ public interface IPersistenceWriterRepository<TEntity> where TEntity : class, IP
     Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken = default) where T : class, TEntity;
     Task<Result<T>> TryUpdate<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken = default) where T : class, TEntity;
 
-    Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken = default) where T : class, TEntity;
-    Task<Result<T>> TryUpdate<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken = default) where T : class, TEntity;
-
-    Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
-    Task<Result<T>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
+    Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
+    Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
 }

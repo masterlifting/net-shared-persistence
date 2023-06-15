@@ -161,6 +161,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
                 await Database.BeginTransactionAsync(cToken);
 
             var query = GetQuery<T>();
+
             options.BuildQuery(ref query);
 
             var entities = await query.ToArrayAsync(cToken);
@@ -191,53 +192,29 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
-    public async Task Update<T>(PersistenceQueryOptions<T> options, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql
+
+    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
+            
+            var query = GetQuery<T>();
 
-            //TOTO: Implement improves for update many
+            options.BuildQuery(ref query);
 
-            Set<T>().UpdateRange(data);
-            await SaveChangesAsync(cToken);
-
-            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
-                await Database.CurrentTransaction.CommitAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            if (Database.CurrentTransaction is not null)
-                await Database.CurrentTransaction.RollbackAsync(cToken);
-
-            throw new PersistenceException(exception);
-        }
-        finally
-        {
-            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
-                await Database.CurrentTransaction.DisposeAsync();
-        }
-    }
-
-    public async Task<T[]> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
-    {
-        try
-        {
-            if (!_isExternalTransaction && Database.CurrentTransaction is null)
-                await Database.BeginTransactionAsync(cToken);
-
-            var entities = await FindMany(options, cToken);
+            var entities = await query.ToArrayAsync(cToken);
 
             if (!entities.Any())
-                return entities;
+                return 0;
 
             await DeleteMany(entities, cToken);
 
             if (!_isExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.CommitAsync(cToken);
 
-            return entities;
+            return entities.Length;
         }
         catch (Exception exception)
         {
