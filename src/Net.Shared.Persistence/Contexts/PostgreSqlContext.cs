@@ -153,24 +153,33 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         }
     }
 
-    public async Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
     {
         try
         {
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
-            var query = GetQuery<T>();
+            T[] entities;
 
-            options.BuildQuery(ref query);
+            if(options.Data is not null)
+            {
+                entities = options.Data;
+            }
+            else
+            {
+                var query = GetQuery<T>();
 
-            var entities = await query.ToArrayAsync(cToken);
+                options.QueryOptions.BuildQuery(ref query);
+
+                entities = await query.ToArrayAsync(cToken);
+            }
 
             if (!entities.Any())
                 return entities;
 
             foreach (var entity in entities)
-                updater(entity);
+                options.Update(entity);
 
             await SaveChangesAsync(cToken);
 

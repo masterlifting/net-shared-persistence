@@ -2,8 +2,8 @@
 
 namespace Net.Shared.Persistence.Models.Contexts;
 
-public sealed class PersistenceSelectorOptions<TEntity, TResult> where TEntity : class
+public sealed class PersistenceSelectorOptions<TData, TResult> where TData : class
 {
-    public PersistenceQueryOptions<TEntity> QueryOptions { get; set; } = new();
-    public Expression<Func<TEntity, TResult>> Selector { get; set; } = null!;
+    public PersistenceQueryOptions<TData> QueryOptions { get; set; } = new();
+    public Expression<Func<TData, TResult>> Selector { get; set; } = null!;
 }

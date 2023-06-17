@@ -40,16 +40,19 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var options = new PersistenceQueryOptions<T>
+        var options = new PersistenceUpdateOptions<T>(updater)
         {
-            Filter = x =>
-                x.HostId == null
-                && x.StepId == step.Id
-                && x.StatusId == (int)ProcessStatuses.Ready,
-            Take = limit
+            QueryOptions = new()
+            {
+                Filter = x =>
+                    x.HostId == null
+                    && x.StepId == step.Id
+                    && x.StatusId == (int)ProcessStatuses.Ready,
+                Take = limit
+            }
         };
 
-        return await _context.Update(options, updater, cToken);
+        return await _context.Update(options, cToken);
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
@@ -62,17 +65,20 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         };
 
-        var options = new PersistenceQueryOptions<T>
+        var options = new PersistenceUpdateOptions<T>(updater)
         {
-            Filter = x =>
-                x.HostId == hostId
-                && x.StepId == step.Id
-                && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
-                && x.Attempt < maxAttempts,
-            Take = limit
+            QueryOptions = new()
+            {
+                Filter = x =>
+                    x.HostId == hostId
+                    && x.StepId == step.Id
+                    && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
+                    && x.Attempt < maxAttempts,
+                Take = limit
+            }
         };
 
-        return await _context.Update(options, updater, cToken);
+        return await _context.Update(options, cToken);
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
@@ -99,15 +105,18 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             }
         };
 
-        var options = new PersistenceQueryOptions<T>
+        var options = new PersistenceUpdateOptions<T>(updater,data)
         {
-            Filter = x =>
+            QueryOptions = new()
+            {
+                Filter = x =>
                 x.HostId == hostId
                 && x.StepId == currenttStep.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
+            }
         };
 
-        await _context.Update(options, updater, cToken);
+        await _context.Update(options, cToken);
     }
     #endregion
 }

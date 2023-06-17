@@ -109,15 +109,18 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
             }
         };
 
-        var options = new PersistenceQueryOptions<T>
+        var options = new PersistenceUpdateOptions<T>(updater,data)
         {
-            Filter = x =>
-                x.HostId == hostId
-                && x.StepId == currenttStep.Id
-                && x.StatusId == (int)ProcessStatuses.Processing
+            QueryOptions = new()
+            {
+                Filter = x =>
+                    x.HostId == hostId
+                    && x.StepId == currenttStep.Id
+                    && x.StatusId == (int)ProcessStatuses.Processing
+            }
         };
 
-        await _context.Update(options, updater, cToken);
+        await _context.Update(options, cToken);
     }
     #endregion
 }

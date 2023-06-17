@@ -10,6 +10,8 @@ using Net.Shared.Persistence.Models.Contexts;
 using Net.Shared.Persistence.Models.Exceptions;
 using Net.Shared.Persistence.Models.Settings.Connections;
 
+using System.Linq.Expressions;
+
 namespace Net.Shared.Persistence.Contexts;
 
 public abstract class MongoDbContext : IPersistenceNoSqlContext
@@ -92,7 +94,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         }
     }
 
-    public async Task<T[]> Update<T>(PersistenceQueryOptions<T> options, Action<T> updater, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         try
         {
@@ -104,11 +106,20 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             var collection = GetCollection<T>();
 
-            IQueryable<T> query = collection.AsQueryable();
+            T[] documents;
 
-            options.BuildQuery(ref query);
+            if (options.Data is not null)
+            {
+                documents = options.Data;
+            }
+            else
+            {
+                IQueryable<T> query = collection.AsQueryable();
 
-            var documents = query.ToArray();
+                options.QueryOptions.BuildQuery(ref query);
+
+                documents = query.ToArray();
+            }
 
             if (!documents.Any())
                 return documents;
@@ -120,8 +131,9 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             foreach (var document in documents)
             {
-                updater(document);
-                await collection.ReplaceOneAsync(_session, options.Filter, document, replaceOptions, cToken);
+                Expression<Func<T, bool>> updateFilter = options.Update(document);
+
+                _ = await collection.ReplaceOneAsync(_session, updateFilter, document, replaceOptions, cToken);
             }
 
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
@@ -166,11 +178,11 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             var deleteOptions = new DeleteOptions
             {
-                
+
             };
 
 
-            for(int i = 0; i < documents.Length - 1; i++)
+            for (int i = 0; i < documents.Length - 1; i++)
             {
                 await collection.DeleteOneAsync(_session, options.Filter, deleteOptions, cToken);
             }
