@@ -1,4 +1,6 @@
-﻿namespace Net.Shared.Persistence.Models.Exceptions;
+﻿using Net.Shared.Exceptions;
+
+namespace Net.Shared.Persistence.Models.Exceptions;
 
 public sealed class PersistenceException : NetSharedException
 {

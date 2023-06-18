@@ -1,7 +1,7 @@
 ﻿using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
-using Net.Shared.Persistence.Abstractions.Repositories;
+using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Contexts;
 

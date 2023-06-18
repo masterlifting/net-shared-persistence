@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using Net.Shared.Extensions.Logging;
-
+using Net.Shared.Extensions;
 using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Contexts;
 using Net.Shared.Persistence.Abstractions.Entities;

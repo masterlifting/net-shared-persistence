@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+
 using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Abstractions.Repositories.Sql;
 using Net.Shared.Persistence.Contexts;
