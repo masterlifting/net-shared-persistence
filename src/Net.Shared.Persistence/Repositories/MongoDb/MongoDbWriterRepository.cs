@@ -38,19 +38,19 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         await _context.CreateOne(entity, cToken);
 
-        _logger.Debug($"The entity '{typeof(T).Name}' was created by repository '{_repositoryInfo}'.");
+        _logger.Debug($"<{typeof(T).Name}> was created by repository '{_repositoryInfo}'.");
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
     {
         if (!entities.Any())
         {
-            _logger.Warning($"The entities '{typeof(T)}' weren't created by repository '{_repositoryInfo}' because the collection is empty.");
+            _logger.Warning($"<{typeof(T)}> weren't created by repository '{_repositoryInfo}' because the collection is empty.");
             return;
         }
 
         await _context.CreateMany(entities, cToken);
 
-        _logger.Debug($"The entities '{typeof(T).Name}' were created by repository '{_repositoryInfo}'. Items count: {entities.Count}.");
+        _logger.Debug($"<{typeof(T).Name}> were created by repository '{_repositoryInfo}'. Count: {entities.Count}.");
     }
     public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
     {
@@ -89,7 +89,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         var entities = await _context.Update(options, cToken);
 
-        _logger.Debug($"The entities '{typeof(T).Name}' were updated by repository '{_repositoryInfo}'. Items count: {entities.Length}.");
+        _logger.Debug($"<{typeof(T).Name}> were updated by repository '{_repositoryInfo}'. Count: {entities.Length}.");
 
         return entities;
     }
@@ -115,7 +115,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     {
         var count = await _context.Delete(options, cToken);
 
-        _logger.Debug($"The entities '{typeof(T).Name}' were deleted by repository '{_repositoryInfo}'. Items count: {count}.");
+        _logger.Debug($"<{typeof(T).Name}> were deleted by repository '{_repositoryInfo}'. Count: {count}.");
 
         return count;
     }
