@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Net.Shared.Persistence.Models.Contexts;
 
-public class PersistenceUpdateOptions<TData> where TData : class
+public sealed record PersistenceUpdateOptions<TData> where TData : class
 {
     private static readonly PropertyInfo _id = typeof(TData).GetProperty("Id") ?? throw new InvalidOperationException("The type must have a public property called Id");
 

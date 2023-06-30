@@ -2,7 +2,7 @@
 
 namespace Net.Shared.Persistence.Models.Contexts;
 
-public sealed class PersistenceQueryOptions<T> where T : class
+public sealed record PersistenceQueryOptions<T> where T : class
 {
     public Expression<Func<T, bool>> Filter { get; set; } = _ => true;
     public Expression<Func<T, object>>? OrderBy { get; set; }
