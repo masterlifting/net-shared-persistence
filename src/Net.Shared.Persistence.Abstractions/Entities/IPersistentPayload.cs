@@ -6,5 +6,5 @@ public interface IPersistentPayload : IPersistent
     byte[] PayloadHash { get; set; }
     string PayloadSource { get; set; }
     string PayloadContentType { get; set; }
-    string PayloadHashAlgoritm { get; set; }
+    string PayloadHashAlgorithm { get; set; }
 }

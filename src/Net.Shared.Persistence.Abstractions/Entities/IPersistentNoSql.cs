@@ -2,5 +2,5 @@
 
 public interface IPersistentNoSql : IPersistent
 {
-    string JsonVersion { get; set; }
+    string DocumentVersion { get; set; }
 }
