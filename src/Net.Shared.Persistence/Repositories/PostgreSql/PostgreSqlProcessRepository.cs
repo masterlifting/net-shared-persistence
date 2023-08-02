@@ -36,7 +36,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         var updatedCount = await _context.GetQuery<T>()
             .Where(x =>
-                x.HostId == null
+                x.HostId == null || x.HostId == hostId
                 && x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Ready)
             .Take(limit)
