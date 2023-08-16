@@ -1,6 +1,5 @@
-﻿namespace Net.Shared.Persistence.Abstractions.Entities
+﻿namespace Net.Shared.Persistence.Abstractions.Entities;
+
+public interface IPersistentSql : IPersistent
 {
-    public interface IPersistentSql : IPersistent
-    {
-    }
 }

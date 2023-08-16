@@ -3,31 +3,123 @@ using Net.Shared.Persistence.Abstractions.Entities;
 using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
+using Net.Shared.Persistence.Contexts;
+using Net.Shared.Persistence.Models.Contexts;
 
-namespace Net.Shared.Persistence.Repositories.AzureTable
+using static Net.Shared.Persistence.Models.Constants.Enums;
+
+namespace Net.Shared.Persistence.Repositories.AzureTable;
+
+public sealed class AzureTableProcessRepository : IPersistenceNoSqlProcessRepository
 {
-    public sealed class AzureTableProcessRepository : IPersistenceNoSqlProcessRepository
+    public AzureTableProcessRepository(AzureTableContext context)
     {
-        public IPersistenceNoSqlContext Context { get; }
-
-        Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessSteps<T>(CancellationToken cToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task IPersistenceProcessRepository<IPersistentNoSql>.SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken)
-        {
-            throw new NotImplementedException();
-        }
+        _context = context;
+        Context = context;
     }
+
+    #region PRIVATE FIELDS
+    private readonly AzureTableContext _context;
+    #endregion
+
+    #region PUBLIC PROPERTIES
+    public IPersistenceNoSqlContext Context { get; }
+    #endregion
+
+    #region PUBLIC METHODS
+    public Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcessStep =>
+        _context.FindMany<T>(new(), cToken);
+    public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    {
+        var updated = DateTime.UtcNow;
+
+        var updater = (T x) =>
+        {
+            x.HostId = hostId;
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
+            x.Updated = updated;
+        };
+
+        var options = new PersistenceUpdateOptions<T>(updater)
+        {
+            QueryOptions = new()
+            {
+                Filter = x =>
+                    x.HostId == null || x.HostId == hostId
+                    && x.StepId == step.Id
+                    && x.StatusId == (int)ProcessStatuses.Ready,
+                Take = limit
+            }
+        };
+
+        return await _context.Update(options, cToken);
+    }
+    public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    {
+        var updated = DateTime.UtcNow;
+
+        var updater = (T x) =>
+        {
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
+            x.Updated = updated;
+        };
+
+        var options = new PersistenceUpdateOptions<T>(updater)
+        {
+            QueryOptions = new()
+            {
+                Filter = x =>
+                    x.HostId == hostId
+                    && x.StepId == step.Id
+                    && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
+                    && x.Attempt < maxAttempts,
+                OrderBy = x => x.Updated,
+                Take = limit
+            }
+        };
+
+        return await _context.Update(options, cToken);
+    }
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    {
+        var updated = DateTime.UtcNow;
+
+        var updater = (T x) =>
+        {
+            x.Updated = updated;
+
+            if (x.StatusId != (int)ProcessStatuses.Error)
+            {
+                x.Error = null;
+
+                switch (nextStep)
+                {
+                    case not null:
+                        x.StatusId = (int)ProcessStatuses.Ready;
+                        x.StepId = nextStep.Id;
+                        break;
+                    default:
+                        x.StatusId = (int)ProcessStatuses.Completed;
+                        break;
+                }
+            }
+        };
+
+        var options = new PersistenceUpdateOptions<T>(updater, data)
+        {
+            QueryOptions = new()
+            {
+                Filter = x =>
+                x.HostId == hostId
+                && x.StepId == currenttStep.Id
+                && x.StatusId == (int)ProcessStatuses.Processing
+            }
+        };
+
+        await _context.Update(options, cToken);
+    }
+
+    #endregion
 }
