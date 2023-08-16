@@ -1,52 +1,49 @@
-﻿using Net.Shared.Models.Domain;
-using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
+﻿using Azure.Data.Tables;
+
+using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Repositories;
-using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
-public sealed class AzureTableWriterRepository : IPersistenceNoSqlWriterRepository
+public sealed class AzureTableWriterRepository : IPersistenceWriterRepository<ITableEntity>
 {
-    public IPersistenceNoSqlContext Context { get; }
-
-    Task IPersistenceWriterRepository<IPersistentNoSql>.CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken)
+    Task IPersistenceWriterRepository<ITableEntity>.CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task IPersistenceWriterRepository<IPersistentNoSql>.CreateOne<T>(T entity, CancellationToken cToken)
+    Task IPersistenceWriterRepository<ITableEntity>.CreateOne<T>(T entity, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<long> IPersistenceWriterRepository<IPersistentNoSql>.Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
+    Task<long> IPersistenceWriterRepository<ITableEntity>.Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Result<T>> IPersistenceWriterRepository<IPersistentNoSql>.TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken)
+    Task<Result<T>> IPersistenceWriterRepository<ITableEntity>.TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Result<T>> IPersistenceWriterRepository<IPersistentNoSql>.TryCreateOne<T>(T entity, CancellationToken cToken)
+    Task<Result<T>> IPersistenceWriterRepository<ITableEntity>.TryCreateOne<T>(T entity, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Result<long>> IPersistenceWriterRepository<IPersistentNoSql>.TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
+    Task<Result<long>> IPersistenceWriterRepository<ITableEntity>.TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Result<T>> IPersistenceWriterRepository<IPersistentNoSql>.TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken)
+    Task<Result<T>> IPersistenceWriterRepository<ITableEntity>.TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceWriterRepository<IPersistentNoSql>.Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken)
+    Task<T[]> IPersistenceWriterRepository<ITableEntity>.Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }

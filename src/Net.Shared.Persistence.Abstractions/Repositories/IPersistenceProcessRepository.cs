@@ -3,7 +3,7 @@ using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
 
 namespace Net.Shared.Persistence.Abstractions.Repositories;
 
-public interface IPersistenceProcessRepository<TEntity> where TEntity : class, IPersistent
+public interface IPersistenceProcessRepository<TEntity>
 {
     Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, TEntity, IPersistentProcessStep;
     Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, TEntity, IPersistentProcess;

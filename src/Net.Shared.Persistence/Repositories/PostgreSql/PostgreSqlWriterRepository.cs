@@ -32,13 +32,13 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
     #endregion
 
     #region PUBLIC METHODS
-    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         await _context.CreateOne(entity, cToken);
 
         _logger.Debug($"<{typeof(T).Name}> was created by repository '{_repositoryInfo}'.");
     }
-    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         if (!entities.Any())
         {
@@ -50,7 +50,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
         _logger.Debug($"<{typeof(T).Name}> were created by repository '{_repositoryInfo}'. Count: {entities.Count}.");
     }
-    public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         try
         {
@@ -66,7 +66,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
             return new Result<T>(new PersistenceException(exception));
         }
     }
-    public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         try
         {
@@ -83,7 +83,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         var entities = await _context.Update(options, cToken);
 
@@ -91,7 +91,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<T>> TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         try
         {
@@ -126,7 +126,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
         return result;
     }
 
-    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         var count = await _context.Delete(options, cToken);
 
@@ -134,7 +134,7 @@ public sealed class PostgreSqlWriterRepository : IPersistenceSqlWriterRepository
 
         return count;
     }
-    public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentSql
+    public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
         try
         {

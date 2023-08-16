@@ -1,6 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Azure.Data.Tables;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Net.Shared.Persistence.Abstractions.Contexts;
+using Net.Shared.Persistence.Abstractions.Entities;
+using Net.Shared.Persistence.Abstractions.Repositories;
 using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Abstractions.Repositories.Sql;
 using Net.Shared.Persistence.Contexts;
@@ -31,6 +35,10 @@ public static class Registrations
             case ServiceLifetime.Scoped:
                 services.AddScoped<T>();
                 services.AddScoped<PostgreSqlContext, T>();
+                services.AddScoped<IPersistenceContext<IPersistentSql>, T>();
+                services.AddScoped<IPersistenceReaderRepository<IPersistentSql>, PostgreSqlReaderRepository>();
+                services.AddScoped<IPersistenceWriterRepository<IPersistentSql>, PostgreSqlWriterRepository>();
+                services.AddScoped<IPersistenceProcessRepository<IPersistentSql>, PostgreSqlProcessRepository>();
                 services.AddScoped<IPersistenceSqlContext, T>();
                 services.AddScoped<IPersistenceSqlReaderRepository, PostgreSqlReaderRepository>();
                 services.AddScoped<IPersistenceSqlWriterRepository, PostgreSqlWriterRepository>();
@@ -39,6 +47,10 @@ public static class Registrations
             case ServiceLifetime.Singleton:
                 services.AddSingleton<T>();
                 services.AddSingleton<PostgreSqlContext, T>();
+                services.AddSingleton<IPersistenceContext<IPersistentSql>, T>();
+                services.AddSingleton<IPersistenceReaderRepository<IPersistentSql>, PostgreSqlReaderRepository>();
+                services.AddSingleton<IPersistenceWriterRepository<IPersistentSql>, PostgreSqlWriterRepository>();
+                services.AddSingleton<IPersistenceProcessRepository<IPersistentSql>, PostgreSqlProcessRepository>();
                 services.AddSingleton<IPersistenceSqlContext, T>();
                 services.AddSingleton<IPersistenceSqlReaderRepository, PostgreSqlReaderRepository>();
                 services.AddSingleton<IPersistenceSqlWriterRepository, PostgreSqlWriterRepository>();
@@ -47,6 +59,10 @@ public static class Registrations
             case ServiceLifetime.Transient:
                 services.AddTransient<T>();
                 services.AddTransient<PostgreSqlContext, T>();
+                services.AddTransient<IPersistenceContext<IPersistentSql>, T>();
+                services.AddTransient<IPersistenceReaderRepository<IPersistentSql>, PostgreSqlReaderRepository>();
+                services.AddTransient<IPersistenceWriterRepository<IPersistentSql>, PostgreSqlWriterRepository>();
+                services.AddTransient<IPersistenceProcessRepository<IPersistentSql>, PostgreSqlProcessRepository>();
                 services.AddTransient<IPersistenceSqlContext, T>();
                 services.AddTransient<IPersistenceSqlReaderRepository, PostgreSqlReaderRepository>();
                 services.AddTransient<IPersistenceSqlWriterRepository, PostgreSqlWriterRepository>();
@@ -74,6 +90,10 @@ public static class Registrations
             case ServiceLifetime.Scoped:
                 services.AddScoped<T>();
                 services.AddScoped<MongoDbContext, T>();
+                services.AddScoped<IPersistenceContext<IPersistentNoSql>, T>();
+                services.AddScoped<IPersistenceReaderRepository<IPersistentNoSql>, MongoDbReaderRepository>();
+                services.AddScoped<IPersistenceWriterRepository<IPersistentNoSql>, MongoDbWriterRepository>();
+                services.AddScoped<IPersistenceProcessRepository<IPersistentNoSql>, MongoDbProcessRepository>();
                 services.AddScoped<IPersistenceNoSqlContext, T>();
                 services.AddScoped<IPersistenceNoSqlReaderRepository, MongoDbReaderRepository>();
                 services.AddScoped<IPersistenceNoSqlWriterRepository, MongoDbWriterRepository>();
@@ -82,6 +102,10 @@ public static class Registrations
             case ServiceLifetime.Singleton:
                 services.AddSingleton<T>();
                 services.AddSingleton<MongoDbContext, T>();
+                services.AddSingleton<IPersistenceContext<IPersistentNoSql>, T>();
+                services.AddSingleton<IPersistenceReaderRepository<IPersistentNoSql>, MongoDbReaderRepository>();
+                services.AddSingleton<IPersistenceWriterRepository<IPersistentNoSql>, MongoDbWriterRepository>();
+                services.AddSingleton<IPersistenceProcessRepository<IPersistentNoSql>, MongoDbProcessRepository>();
                 services.AddSingleton<IPersistenceNoSqlContext, T>();
                 services.AddSingleton<IPersistenceNoSqlReaderRepository, MongoDbReaderRepository>();
                 services.AddSingleton<IPersistenceNoSqlWriterRepository, MongoDbWriterRepository>();
@@ -90,6 +114,10 @@ public static class Registrations
             case ServiceLifetime.Transient:
                 services.AddTransient<T>();
                 services.AddTransient<MongoDbContext, T>();
+                services.AddTransient<IPersistenceContext<IPersistentNoSql>, T>();
+                services.AddTransient<IPersistenceReaderRepository<IPersistentNoSql>, MongoDbReaderRepository>();
+                services.AddTransient<IPersistenceWriterRepository<IPersistentNoSql>, MongoDbWriterRepository>();
+                services.AddTransient<IPersistenceProcessRepository<IPersistentNoSql>, MongoDbProcessRepository>();
                 services.AddTransient<IPersistenceNoSqlContext, T>();
                 services.AddTransient<IPersistenceNoSqlReaderRepository, MongoDbReaderRepository>();
                 services.AddTransient<IPersistenceNoSqlWriterRepository, MongoDbWriterRepository>();
@@ -117,26 +145,26 @@ public static class Registrations
             case ServiceLifetime.Scoped:
                 services.AddScoped<T>();
                 services.AddScoped<AzureTableContext, T>();
-                services.AddScoped<IPersistenceNoSqlContext, T>();
-                services.AddScoped<IPersistenceNoSqlReaderRepository, AzureTableReaderRepository>();
-                services.AddScoped<IPersistenceNoSqlWriterRepository, AzureTableWriterRepository>();
-                services.AddScoped<IPersistenceNoSqlProcessRepository, AzureTableProcessRepository>();
+                services.AddScoped<IPersistenceContext<ITableEntity>, T>();
+                services.AddScoped<IPersistenceReaderRepository<ITableEntity>, AzureTableReaderRepository>();
+                services.AddScoped<IPersistenceWriterRepository<ITableEntity>, AzureTableWriterRepository>();
+                services.AddScoped<IPersistenceProcessRepository<ITableEntity>, AzureTableProcessRepository>();
                 break;
             case ServiceLifetime.Singleton:
                 services.AddSingleton<T>();
                 services.AddSingleton<AzureTableContext, T>();
-                services.AddSingleton<IPersistenceNoSqlContext, T>();
-                services.AddSingleton<IPersistenceNoSqlReaderRepository, AzureTableReaderRepository>();
-                services.AddSingleton<IPersistenceNoSqlWriterRepository, AzureTableWriterRepository>();
-                services.AddSingleton<IPersistenceNoSqlProcessRepository, AzureTableProcessRepository>();
+                services.AddSingleton<IPersistenceContext<ITableEntity>, T>();
+                services.AddSingleton<IPersistenceReaderRepository<ITableEntity>, AzureTableReaderRepository>();
+                services.AddSingleton<IPersistenceWriterRepository<ITableEntity>, AzureTableWriterRepository>();
+                services.AddSingleton<IPersistenceProcessRepository<ITableEntity>, AzureTableProcessRepository>();
                 break;
             case ServiceLifetime.Transient:
                 services.AddTransient<T>();
                 services.AddTransient<AzureTableContext, T>();
-                services.AddTransient<IPersistenceNoSqlContext, T>();
-                services.AddTransient<IPersistenceNoSqlReaderRepository, AzureTableReaderRepository>();
-                services.AddTransient<IPersistenceNoSqlWriterRepository, AzureTableWriterRepository>();
-                services.AddTransient<IPersistenceNoSqlProcessRepository, AzureTableProcessRepository>();
+                services.AddTransient<IPersistenceContext<ITableEntity>, T>();
+                services.AddTransient<IPersistenceReaderRepository<ITableEntity>, AzureTableReaderRepository>();
+                services.AddTransient<IPersistenceWriterRepository<ITableEntity>, AzureTableWriterRepository>();
+                services.AddTransient<IPersistenceProcessRepository<ITableEntity>, AzureTableProcessRepository>();
                 break;
         }
     }

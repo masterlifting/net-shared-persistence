@@ -26,17 +26,17 @@ public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
 
     #region PUBLIC METHODS
 
-    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentNoSql =>
         _context.IsExists(options, cToken);
 
-    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentNoSql =>
         _context.FindSingle(options, cToken);
-    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentNoSql =>
         _context.FindFirst(options, cToken);
 
-    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentNoSql =>
         _context.FindMany(options, cToken);
-    public Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken = default) where T : class, IPersistentNoSql =>
+    public Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentNoSql =>
         _context.FindMany(options, cToken);
 
     #region Catalogs API

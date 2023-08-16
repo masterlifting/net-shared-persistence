@@ -35,17 +35,17 @@ public sealed class PostgreSqlReaderRepository : IPersistenceSqlReaderRepository
         _context.FindById<T>(id, cToken);
     #endregion
 
-    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentSql =>
         _context.IsExists(options, cToken);
 
-    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentSql =>
         _context.FindSingle(options, cToken);
-    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentSql =>
         _context.FindFirst(options, cToken);
 
-    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentSql =>
         _context.FindMany(options, cToken);
-    public Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken = default) where T : class, IPersistentSql =>
+    public Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken = default) where T : class, IPersistent, IPersistentSql =>
         _context.FindMany(options, cToken);
 
     #region Catalogs API

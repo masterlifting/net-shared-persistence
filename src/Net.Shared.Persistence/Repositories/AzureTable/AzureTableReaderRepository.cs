@@ -1,71 +1,68 @@
-﻿using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
+﻿using Azure.Data.Tables;
+
 using Net.Shared.Persistence.Abstractions.Repositories;
-using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
 using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
-public sealed class AzureTableReaderRepository : IPersistenceNoSqlReaderRepository
+public sealed class AzureTableReaderRepository : IPersistenceReaderRepository<ITableEntity>
 {
-    public IPersistenceNoSqlContext Context { get; }
-
-    Task<T?> IPersistenceReaderRepository<IPersistentNoSql>.FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
+    Task<T?> IPersistenceReaderRepository<ITableEntity>.FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceReaderRepository<IPersistentNoSql>.FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
+    Task<T[]> IPersistenceReaderRepository<ITableEntity>.FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<TResult[]> IPersistenceReaderRepository<IPersistentNoSql>.FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken)
+    Task<TResult[]> IPersistenceReaderRepository<ITableEntity>.FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T?> IPersistenceReaderRepository<IPersistentNoSql>.FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
+    Task<T?> IPersistenceReaderRepository<ITableEntity>.FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
     {
         throw new NotImplementedException();
     }
 
-    Task<T> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogByEnum<T, TEnum>(TEnum value, CancellationToken cToken)
+    Task<T> IPersistenceReaderRepository<ITableEntity>.GetCatalogByEnum<T, TEnum>(TEnum value, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogById<T>(int id, CancellationToken cToken)
+    Task<T> IPersistenceReaderRepository<ITableEntity>.GetCatalogById<T>(int id, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogByName<T>(string name, CancellationToken cToken)
+    Task<T> IPersistenceReaderRepository<ITableEntity>.GetCatalogByName<T>(string name, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<T[]> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogs<T>(CancellationToken cToken)
+    Task<T[]> IPersistenceReaderRepository<ITableEntity>.GetCatalogs<T>(CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Dictionary<TEnum, T>> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogsDictionaryByEnum<T, TEnum>(CancellationToken cToken)
+    Task<Dictionary<TEnum, T>> IPersistenceReaderRepository<ITableEntity>.GetCatalogsDictionaryByEnum<T, TEnum>(CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Dictionary<int, T>> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogsDictionaryById<T>(CancellationToken cToken)
+    Task<Dictionary<int, T>> IPersistenceReaderRepository<ITableEntity>.GetCatalogsDictionaryById<T>(CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Dictionary<string, T>> IPersistenceReaderRepository<IPersistentNoSql>.GetCatalogsDictionaryByName<T>(CancellationToken cToken)
+    Task<Dictionary<string, T>> IPersistenceReaderRepository<ITableEntity>.GetCatalogsDictionaryByName<T>(CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IPersistenceReaderRepository<IPersistentNoSql>.IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
+    Task<bool> IPersistenceReaderRepository<ITableEntity>.IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }

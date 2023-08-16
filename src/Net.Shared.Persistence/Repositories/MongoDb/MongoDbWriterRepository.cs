@@ -34,13 +34,13 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
     #endregion
 
     #region PUBLIC METHODS
-    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         await _context.CreateOne(entity, cToken);
 
         _logger.Debug($"<{typeof(T).Name}> was created by repository '{_repositoryInfo}'.");
     }
-    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         if (!entities.Any())
         {
@@ -52,7 +52,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
 
         _logger.Debug($"<{typeof(T).Name}> were created by repository '{_repositoryInfo}'. Count: {entities.Count}.");
     }
-    public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         try
         {
@@ -68,7 +68,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
             return new Result<T>(new PersistenceException(exception));
         }
     }
-    public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         try
         {
@@ -85,7 +85,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         var entities = await _context.Update(options, cToken);
 
@@ -93,7 +93,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
 
         return entities;
     }
-    public async Task<Result<T>> TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<T>> TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         try
         {
@@ -111,7 +111,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         }
     }
 
-    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         var count = await _context.Delete(options, cToken);
 
@@ -119,7 +119,7 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
 
         return count;
     }
-    public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistentNoSql
+    public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
         try
         {

@@ -4,13 +4,13 @@ using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Abstractions.Repositories;
 
-public interface IPersistenceReaderRepository<TEntity> where TEntity : class, IPersistent
+public interface IPersistenceReaderRepository<TEntity>
 {
-    Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
-    Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
-    Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
-    Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity;
-    Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken = default) where T : class, TEntity;
+    Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, TEntity;
+    Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, TEntity;
+    Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, TEntity;
+    Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, IPersistent, TEntity;
+    Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken = default) where T : class, IPersistent, TEntity;
 
     #region Catalogs API
     Task<T[]> GetCatalogs<T>(CancellationToken cToken = default) where T : class, TEntity, IPersistentCatalog;
