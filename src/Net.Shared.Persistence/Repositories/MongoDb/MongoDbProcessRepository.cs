@@ -81,7 +81,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
 
         return await _context.Update(options, cToken);
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -112,7 +112,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             {
                 Filter = x =>
                 x.HostId == hostId
-                && x.StepId == currenttStep.Id
+                && x.StepId == currentStep.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
             }
         };

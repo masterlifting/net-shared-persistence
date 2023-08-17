@@ -5,17 +5,24 @@ namespace Net.Shared.Persistence.Models.Contexts;
 
 public sealed record PersistenceUpdateOptions<TData> where TData : class
 {
-    private static readonly PropertyInfo _id = typeof(TData).GetProperty("Id") ?? throw new InvalidOperationException("The type must have a public property called Id");
+    readonly PropertyInfo _id;
 
-    private readonly Action<TData> _updater;
-    private readonly Dictionary<object, TData>? _dataDictionary;
+    readonly Action<TData> _updater;
+    readonly Dictionary<object, TData>? _dataDictionary;
+    readonly string _idName = "Id";
 
-    public PersistenceUpdateOptions(Action<TData> updater)
+    public PersistenceUpdateOptions(Action<TData> updater, string? idName = null)
     {
+        _idName = idName ?? _idName;
+        _id = typeof(TData).GetProperty(_idName) ?? throw new InvalidOperationException($"The type must have a public property called '{_idName}'");
+
         _updater = updater;
     }
-    public PersistenceUpdateOptions(Action<TData> updater, IEnumerable<TData> data)
+    public PersistenceUpdateOptions(Action<TData> updater, IEnumerable<TData> data, string? idName = null)
     {
+        _idName = idName ?? _idName;
+        _id = typeof(TData).GetProperty(_idName) ?? throw new InvalidOperationException($"The type must have a public property called '{_idName}'");
+
         Data = data.ToArray();
         _updater = updater;
         _dataDictionary = data.ToDictionary(GetId);
@@ -39,19 +46,19 @@ public sealed record PersistenceUpdateOptions<TData> where TData : class
         return EqualIdExpression(id);
     }
 
-    private static readonly ParameterExpression x = Expression.Parameter(typeof(TData), "x");
-    private static Expression<Func<TData, bool>> EqualIdExpression(object id)
+    private static readonly ParameterExpression X = Expression.Parameter(typeof(TData), "x");
+    private Expression<Func<TData, bool>> EqualIdExpression(object id)
     {
-        var property = Expression.Property(x, "Id");
+        var property = Expression.Property(X, _idName);
         var constant = Expression.Constant(id);
         var equal = Expression.Equal(property, constant);
 
-        return Expression.Lambda<Func<TData, bool>>(equal, x);
+        return Expression.Lambda<Func<TData, bool>>(equal, X);
     }
     private object GetId(TData item)
     {
-        var propertyExpression = Expression.Property(x, _id);
-        var lambda = Expression.Lambda<Func<TData, object>>(Expression.Convert(propertyExpression, typeof(object)), x);
+        var propertyExpression = Expression.Property(X, _id);
+        var lambda = Expression.Lambda<Func<TData, object>>(Expression.Convert(propertyExpression, typeof(object)), X);
 
         return lambda.Compile()(item);
     }

@@ -84,7 +84,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
 
         return result;
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currenttStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -115,7 +115,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
             {
                 Filter = x =>
                     x.HostId == hostId
-                    && x.StepId == currenttStep.Id
+                    && x.StepId == currentStep.Id
                     && x.StatusId == (int)ProcessStatuses.Processing
             }
         };

@@ -2,12 +2,19 @@
 
 using Net.Shared.Models.Domain;
 using Net.Shared.Persistence.Abstractions.Repositories;
+using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
 public sealed class AzureTableWriterRepository : IPersistenceWriterRepository<ITableEntity>
 {
+    private readonly AzureTableContext _context;
+
+    public AzureTableWriterRepository(AzureTableContext context)
+    {
+        _context = context;
+    }
     Task IPersistenceWriterRepository<ITableEntity>.CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken)
     {
         throw new NotImplementedException();
@@ -15,7 +22,7 @@ public sealed class AzureTableWriterRepository : IPersistenceWriterRepository<IT
 
     Task IPersistenceWriterRepository<ITableEntity>.CreateOne<T>(T entity, CancellationToken cToken)
     {
-        throw new NotImplementedException();
+        return _context.CreateOne(entity, cToken);
     }
 
     Task<long> IPersistenceWriterRepository<ITableEntity>.Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)

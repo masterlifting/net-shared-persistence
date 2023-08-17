@@ -9,6 +9,13 @@ namespace Net.Shared.Persistence.Contexts;
 public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
 {
     readonly TableServiceClient _tableServiceClient;
+
+    private TableClient GetTableClient<T>() where T : class, IPersistent, ITableEntity => _tableServiceClient.GetTableClient(typeof(T).Name);
+    private IQueryable<T> GetQuery<T>(TableClient client) where T : class, IPersistent, ITableEntity =>
+        client.Query<T>().AsQueryable();
+    public IQueryable<T> GetQuery<T>() where T : class, IPersistent, ITableEntity =>
+        GetTableClient<T>().Query<T>().AsQueryable();
+
     public AzureTableContext(string connectionString)
     {
         _tableServiceClient = new TableServiceClient(connectionString);
@@ -19,22 +26,21 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     {
     }
 
-    public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, ITableEntity
+
+    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
         throw new NotImplementedException();
     }
-    public Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, ITableEntity
-    {
-        throw new NotImplementedException();
-    }
-    public Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
-    {
-        throw new NotImplementedException();
-    }
+
     public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
         throw new NotImplementedException();
     }
+    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
         throw new NotImplementedException();
@@ -43,28 +49,62 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     {
         throw new NotImplementedException();
     }
-    public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
+
+    public Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, ITableEntity
+    {
+        var tableClient = GetTableClient<T>();
+        return tableClient.AddEntityAsync(entity, cToken);
+    }
+    public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
         throw new NotImplementedException();
     }
-    public IQueryable<T> GetQuery<T>() where T : class, IPersistent, ITableEntity
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
-    {
-        throw new NotImplementedException();
-    }
+
     public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
-        var tableName = typeof(T).Name;
-        var tableClient = _tableServiceClient.GetTableClient(tableName);
-        var query = tableClient.Query<T>().AsQueryable();
-        options.QueryOptions.BuildQuery(ref query);
-        var results = query.ToArray();
-        return results;
+        var client = GetTableClient<T>();
+        
+        T[] rows;
+
+        if (options.Data is not null)
+        {
+            rows = options.Data;
+        }
+        else
+        {
+            var query = GetQuery<T>(client);
+            
+            options.QueryOptions.BuildQuery(ref query);
+            
+            rows = query.ToArray();
+        }
+
+        if (!rows.Any())
+            return rows;
+
+        foreach (var row in rows)
+        {
+            _ = options.Update(row);
+            
+            try
+            {
+                await client.UpdateEntityAsync(row, row.ETag, TableUpdateMode.Merge, cToken);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
+        return rows;
     }
-    
+
+    public Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
+    {
+        throw new NotImplementedException();
+    }
+
     public Task StartTransaction(CancellationToken cToken)
     {
         throw new NotImplementedException();
@@ -80,10 +120,8 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
 
     public void Dispose()
     {
-        throw new NotImplementedException();
     }
 }
-
 public sealed class AzureTableBuilder
 {
     private readonly TableServiceClient _serviceClient;
@@ -100,11 +138,11 @@ public sealed class AzureTableBuilder
         var tableName = typeof(T).Name;
 
         var response = _serviceClient.CreateTableIfNotExists(tableName);
-        
-        if(response.Value is not null)
+
+        if (response.Value is not null)
         {
             var tableClient = _serviceClient.GetTableClient(tableName);
-            
+
             foreach (var entity in entities)
             {
                 tableClient.AddEntity(entity);
