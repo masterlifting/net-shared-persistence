@@ -14,14 +14,14 @@ public sealed record PersistenceUpdateOptions<TData> where TData : class
     public PersistenceUpdateOptions(Action<TData> updater, string? idName = null)
     {
         _idName = idName ?? _idName;
-        _id = typeof(TData).GetProperty(_idName) ?? throw new InvalidOperationException($"The type must have a public property called '{_idName}'");
+        _id = typeof(TData).GetProperty(_idName) ?? throw new InvalidOperationException($"The  '{typeof(TData).Name}' must have a public property called '{_idName}'");
 
         _updater = updater;
     }
     public PersistenceUpdateOptions(Action<TData> updater, IEnumerable<TData> data, string? idName = null)
     {
         _idName = idName ?? _idName;
-        _id = typeof(TData).GetProperty(_idName) ?? throw new InvalidOperationException($"The type must have a public property called '{_idName}'");
+        _id = typeof(TData).GetProperty(_idName) ?? throw new InvalidOperationException($"The '{typeof(TData).Name}' must have a public property called '{_idName}'");
 
         Data = data.ToArray();
         _updater = updater;
@@ -38,7 +38,7 @@ public sealed record PersistenceUpdateOptions<TData> where TData : class
         {
             item = _dataDictionary.ContainsKey(id)
                 ? _dataDictionary[id]
-                : throw new InvalidOperationException("The item is not in the data collection");
+                : throw new InvalidOperationException($"The '{typeof(TData).Name}' with id ''{id} is not in the data collection.");
         }
 
         _updater(item);

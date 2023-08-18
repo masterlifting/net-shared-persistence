@@ -63,7 +63,7 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
         var client = GetTableClient<T>();
-        
+
         T[] rows;
 
         if (options.Data is not null)
@@ -73,9 +73,9 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
         else
         {
             var query = GetQuery<T>(client);
-            
+
             options.QueryOptions.BuildQuery(ref query);
-            
+
             rows = query.ToArray();
         }
 
@@ -85,16 +85,10 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
         foreach (var row in rows)
         {
             _ = options.Update(row);
-            
-            try
-            {
-                await client.UpdateEntityAsync(row, row.ETag, TableUpdateMode.Merge, cToken);
-            }
-            catch (Exception ex)
-            {
 
-                throw;
-            }
+            var result = await client.UpdateEntityAsync(row, row.ETag, TableUpdateMode.Merge, cToken);
+            
+            row.ETag = result.Headers.ETag!.Value;
         }
 
         return rows;
