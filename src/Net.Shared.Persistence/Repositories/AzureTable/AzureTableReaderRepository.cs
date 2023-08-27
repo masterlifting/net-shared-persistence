@@ -1,12 +1,16 @@
 ﻿using Azure.Data.Tables;
 
 using Net.Shared.Persistence.Abstractions.Repositories;
+using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
 public sealed class AzureTableReaderRepository : IPersistenceReaderRepository<ITableEntity>
 {
+    private readonly AzureTableContext _context;
+    public AzureTableReaderRepository(AzureTableContext context) => _context = context;
+    
     Task<T?> IPersistenceReaderRepository<ITableEntity>.FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
     {
         throw new NotImplementedException();
@@ -24,7 +28,7 @@ public sealed class AzureTableReaderRepository : IPersistenceReaderRepository<IT
 
     Task<T?> IPersistenceReaderRepository<ITableEntity>.FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
     {
-        throw new NotImplementedException();
+        return _context.FindSingle(options, cToken);
     }
 
     Task<T> IPersistenceReaderRepository<ITableEntity>.GetCatalogByEnum<T, TEnum>(TEnum value, CancellationToken cToken)
@@ -64,6 +68,6 @@ public sealed class AzureTableReaderRepository : IPersistenceReaderRepository<IT
 
     Task<bool> IPersistenceReaderRepository<ITableEntity>.IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
     {
-        throw new NotImplementedException();
+        return _context.IsExists(options, cToken);
     }
 }

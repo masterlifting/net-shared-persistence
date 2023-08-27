@@ -11,7 +11,7 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     readonly TableServiceClient _tableServiceClient;
 
     private TableClient GetTableClient<T>() where T : class, IPersistent, ITableEntity => _tableServiceClient.GetTableClient(typeof(T).Name);
-    private IQueryable<T> GetQuery<T>(TableClient client) where T : class, IPersistent, ITableEntity =>
+    private static IQueryable<T> GetQuery<T>(TableClient client) where T : class, IPersistent, ITableEntity =>
         client.Query<T>().AsQueryable();
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, ITableEntity =>
         GetTableClient<T>().Query<T>().AsQueryable();
@@ -29,7 +29,9 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
 
     public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
-        throw new NotImplementedException();
+        var query = GetQuery<T>();
+        options.BuildQuery(ref query);
+        return Task.FromResult(query.Count() > 0);
     }
 
     public Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
@@ -38,7 +40,9 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     }
     public Task<T?> FindSingle<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
-        throw new NotImplementedException();
+        var query = GetQuery<T>();
+        options.BuildQuery(ref query);
+        return Task.FromResult(query.SingleOrDefault());
     }
 
     public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
