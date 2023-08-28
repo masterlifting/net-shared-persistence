@@ -52,6 +52,6 @@ public sealed class AzureTableWriterRepository : IPersistenceWriterRepository<IT
 
     Task<T[]> IPersistenceWriterRepository<ITableEntity>.Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken)
     {
-        throw new NotImplementedException();
+        return _context.Update(options, cToken);
     }
 }
