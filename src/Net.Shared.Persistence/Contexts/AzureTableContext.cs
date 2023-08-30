@@ -47,7 +47,9 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
 
     public Task<T[]> FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {
-        throw new NotImplementedException();
+        var query = GetQuery<T>();
+        options.BuildQuery(ref query);
+        return Task.FromResult(query.ToArray());
     }
     public Task<TResult[]> FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
     {

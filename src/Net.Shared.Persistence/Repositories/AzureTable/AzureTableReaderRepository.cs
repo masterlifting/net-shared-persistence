@@ -18,7 +18,7 @@ public sealed class AzureTableReaderRepository : IPersistenceReaderRepository<IT
 
     Task<T[]> IPersistenceReaderRepository<ITableEntity>.FindMany<T>(PersistenceQueryOptions<T> options, CancellationToken cToken)
     {
-        throw new NotImplementedException();
+        return _context.FindMany(options, cToken);
     }
 
     Task<TResult[]> IPersistenceReaderRepository<ITableEntity>.FindMany<T, TResult>(PersistenceSelectorOptions<T, TResult> options, CancellationToken cToken)
