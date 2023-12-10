@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 
+using Net.Shared.Abstractions.Models.Domain;
 using Net.Shared.Extensions;
-using Net.Shared.Models.Domain;
-using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Abstractions.Repositories.Sql;
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.Sql;
+using Net.Shared.Persistence.Abstractions.Models.Contexts;
+using Net.Shared.Persistence.Abstractions.Models.Exceptions;
 using Net.Shared.Persistence.Contexts;
-using Net.Shared.Persistence.Models.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 

@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Abstractions.Entities.Catalogs;
-using Net.Shared.Persistence.Abstractions.Repositories.Sql;
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
+using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.Sql;
+using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
-using Net.Shared.Persistence.Models.Contexts;
 
-using static Net.Shared.Persistence.Models.Constants.Enums;
+using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 

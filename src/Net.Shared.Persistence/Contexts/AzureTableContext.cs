@@ -1,8 +1,8 @@
 ﻿using Azure.Data.Tables;
 
-using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Models.Contexts;
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
+using Net.Shared.Persistence.Abstractions.Models.Contexts;
 
 namespace Net.Shared.Persistence.Contexts;
 

@@ -2,11 +2,11 @@
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Abstractions.Repositories;
-using Net.Shared.Persistence.Abstractions.Repositories.NoSql;
-using Net.Shared.Persistence.Abstractions.Repositories.Sql;
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.NoSql;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.Sql;
 using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Repositories.AzureTable;
 using Net.Shared.Persistence.Repositories.MongoDb;

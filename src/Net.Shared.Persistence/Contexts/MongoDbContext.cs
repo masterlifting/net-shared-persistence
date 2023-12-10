@@ -4,11 +4,11 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-using Net.Shared.Persistence.Abstractions.Contexts;
-using Net.Shared.Persistence.Abstractions.Entities;
-using Net.Shared.Persistence.Models.Contexts;
-using Net.Shared.Persistence.Models.Exceptions;
-using Net.Shared.Persistence.Models.Settings.Connections;
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
+using Net.Shared.Persistence.Abstractions.Models.Contexts;
+using Net.Shared.Persistence.Abstractions.Models.Exceptions;
+using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
 
 using System.Linq.Expressions;
 

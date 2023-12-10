@@ -1,9 +1,9 @@
 ﻿using Azure.Data.Tables;
 
-using Net.Shared.Models.Domain;
-using Net.Shared.Persistence.Abstractions.Repositories;
+using Net.Shared.Abstractions.Models.Domain;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
+using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
-using Net.Shared.Persistence.Models.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 

@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Net.Shared.Persistence.Models\Net.Shared.Persistence.Models.csproj" />
+    <ProjectReference Include="..\..\..\Net.Shared.Exceptions\src\Net.Shared.Exceptions\Net.Shared.Exceptions.csproj" />
+    <ProjectReference Include="..\..\..\Net.Shared\src\Net.Shared.Abstractions\Net.Shared.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
