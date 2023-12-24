@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Net.Shared.Exceptions\src\Net.Shared.Exceptions\Net.Shared.Exceptions.csproj" />
-    <ProjectReference Include="..\..\..\Net.Shared\src\Net.Shared.Abstractions\Net.Shared.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\shared-exceptions\src\Net.Shared.Exceptions\Net.Shared.Exceptions.csproj" />
+    <ProjectReference Include="..\..\..\shared\src\Net.Shared.Abstractions\Net.Shared.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
