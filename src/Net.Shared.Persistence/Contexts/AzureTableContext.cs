@@ -3,6 +3,7 @@
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
+using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
 
 namespace Net.Shared.Persistence.Contexts;
 
@@ -16,9 +17,9 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, ITableEntity =>
         GetTableClient<T>().Query<T>().AsQueryable();
 
-    public AzureTableContext(string connectionString)
+    public AzureTableContext(AzureTableConnection connectionSettings)
     {
-        _tableServiceClient = new TableServiceClient(connectionString);
+        _tableServiceClient = new TableServiceClient(connectionSettings.ConnectionString);
 
         OnModelCreating(new AzureTableBuilder(_tableServiceClient));
     }

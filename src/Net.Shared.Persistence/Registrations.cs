@@ -1,5 +1,6 @@
 ﻿using Azure.Data.Tables;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
@@ -7,6 +8,7 @@ using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.NoSql;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.Sql;
+using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
 using Net.Shared.Persistence.Contexts;
 using Net.Shared.Persistence.Repositories.AzureTable;
 using Net.Shared.Persistence.Repositories.MongoDb;
@@ -30,6 +32,15 @@ public static class Registrations
     /// </typeparam>
     public static void AddPostgreSql<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : PostgreSqlContext
     {
+        services
+            .AddOptions<PostgreSqlConnection>()
+            .Configure<IConfiguration>((settings, configuration) =>
+            {
+                configuration
+                    .GetSection(PostgreSqlConnection.SectionName)
+                    .Bind(settings);
+            });
+
         switch (lifetime)
         {
             case ServiceLifetime.Scoped:
@@ -85,6 +96,15 @@ public static class Registrations
     /// </typeparam>
     public static void AddMongoDb<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : MongoDbContext
     {
+        services
+            .AddOptions<MongoDbConnection>()
+            .Configure<IConfiguration>((settings, configuration) =>
+            {
+                configuration
+                    .GetSection(MongoDbConnection.SectionName)
+                    .Bind(settings);
+            });
+
         switch (lifetime)
         {
             case ServiceLifetime.Scoped:
