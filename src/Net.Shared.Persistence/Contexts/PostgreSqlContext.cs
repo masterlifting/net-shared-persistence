@@ -12,12 +12,12 @@ namespace Net.Shared.Persistence.Contexts;
 public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 {
     private readonly ILoggerFactory _loggerFactory;
-    private readonly PostgreSqlConnection _connectionSettings;
+    private readonly PostgreSqlConnectionSettings _connectionSettings;
     private bool _isExternalTransaction;
 
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentSql => Set<T>();
 
-    protected PostgreSqlContext(ILoggerFactory loggerFactory, PostgreSqlConnection connectionSettings)
+    protected PostgreSqlContext(ILoggerFactory loggerFactory, PostgreSqlConnectionSettings connectionSettings)
     {
         _loggerFactory = loggerFactory;
         _connectionSettings = connectionSettings;
@@ -162,7 +162,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             T[] entities;
 
-            if(options.Data is not null)
+            if (options.Data is not null)
             {
                 entities = options.Data;
             }
@@ -208,7 +208,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         {
             if (!_isExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
-            
+
             var query = GetQuery<T>();
 
             options.BuildQuery(ref query);

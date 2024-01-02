@@ -17,15 +17,13 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, ITableEntity =>
         GetTableClient<T>().Query<T>().AsQueryable();
 
-    public AzureTableContext(AzureTableConnection connectionSettings)
+    public AzureTableContext(AzureTableConnectionSettings connectionSettings)
     {
         _tableServiceClient = new TableServiceClient(connectionSettings.ConnectionString);
 
         OnModelCreating(new AzureTableBuilder(_tableServiceClient));
     }
-    public virtual void OnModelCreating(AzureTableBuilder azureTableBuilder)
-    {
-    }
+    public abstract void OnModelCreating(AzureTableBuilder azureTableBuilder);
 
 
     public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, ITableEntity
@@ -94,7 +92,7 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
             _ = options.Update(row);
 
             var result = await client.UpdateEntityAsync(row, row.ETag, TableUpdateMode.Merge, cToken);
-            
+
             row.ETag = result.Headers.ETag!.Value;
         }
 

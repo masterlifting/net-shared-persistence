@@ -33,11 +33,11 @@ public static class Registrations
     public static void AddPostgreSql<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : PostgreSqlContext
     {
         services
-            .AddOptions<PostgreSqlConnection>()
+            .AddOptions<PostgreSqlConnectionSettings>()
             .Configure<IConfiguration>((settings, configuration) =>
             {
                 configuration
-                    .GetSection(PostgreSqlConnection.SectionName)
+                    .GetSection(PostgreSqlConnectionSettings.SectionName)
                     .Bind(settings);
             });
 
@@ -97,11 +97,11 @@ public static class Registrations
     public static void AddMongoDb<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : MongoDbContext
     {
         services
-            .AddOptions<MongoDbConnection>()
+            .AddOptions<MongoDbConnectionSettings>()
             .Configure<IConfiguration>((settings, configuration) =>
             {
                 configuration
-                    .GetSection(MongoDbConnection.SectionName)
+                    .GetSection(MongoDbConnectionSettings.SectionName)
                     .Bind(settings);
             });
 
@@ -160,6 +160,15 @@ public static class Registrations
     /// </typeparam>
     public static void AddAzureTable<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : AzureTableContext
     {
+        services
+            .AddOptions<AzureTableConnectionSettings>()
+            .Configure<IConfiguration>((settings, configuration) =>
+            {
+                configuration
+                    .GetSection(AzureTableConnectionSettings.SectionName)
+                    .Bind(settings);
+            });
+
         switch (lifetime)
         {
             case ServiceLifetime.Scoped:

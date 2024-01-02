@@ -24,7 +24,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
-    protected MongoDbContext(MongoDbConnection connectionSettings)
+    protected MongoDbContext(MongoDbConnectionSettings connectionSettings)
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
@@ -32,9 +32,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         OnModelCreating(new MongoDbBuilder(_dataBase));
     }
 
-    public virtual void OnModelCreating(MongoDbBuilder builder)
-    {
-    }
+    public abstract void OnModelCreating(MongoDbBuilder builder);
 
     public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
