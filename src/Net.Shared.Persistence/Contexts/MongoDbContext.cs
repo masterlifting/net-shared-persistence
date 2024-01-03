@@ -104,7 +104,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
                 documents = query.ToArray();
             }
 
-            if (!documents.Any())
+            if (documents.Length == 0)
                 return documents;
 
             var replaceOptions = new ReplaceOptions
