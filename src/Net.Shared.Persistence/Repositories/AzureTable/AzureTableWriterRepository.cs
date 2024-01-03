@@ -1,6 +1,6 @@
 ﻿using Azure.Data.Tables;
 
-using Net.Shared.Abstractions.Models.Domain;
+using Net.Shared.Abstractions.Models.Data;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;

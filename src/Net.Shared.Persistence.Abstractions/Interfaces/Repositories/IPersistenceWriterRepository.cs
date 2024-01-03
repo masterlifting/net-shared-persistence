@@ -1,4 +1,4 @@
-﻿using Net.Shared.Abstractions.Models.Domain;
+﻿using Net.Shared.Abstractions.Models.Data;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 

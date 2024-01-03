@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
-using Net.Shared.Persistence.Abstractions.Models.Exceptions;
 using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
 
 namespace Net.Shared.Persistence.Contexts;
@@ -32,7 +31,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     #region Spetialized API
     public string GetTableName<T>() where T : class, IPersistentSql =>
-        Model.FindEntityType(typeof(T))?.ShortName() ?? throw new PersistenceException($"Searching a table name {typeof(T).Name} was not found.");
+        Model.FindEntityType(typeof(T))?.ShortName() ?? throw new InvalidOperationException($"Searching a table name {typeof(T).Name} was not found.");
 
     public IQueryable<T> GetQueryFromRaw<T>(FormattableString query, CancellationToken cToken) where T : class, IPersistentSql =>
         Set<T>().FromSqlRaw(query.Format);
@@ -44,52 +43,24 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
-        try
-        {
-            base.Set<T>().Update(entity);
-            await SaveChangesAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        base.Set<T>().Update(entity);
+        await SaveChangesAsync(cToken);
     }
     public async Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
-        try
-        {
-            base.Set<T>().UpdateRange(entities);
-            await SaveChangesAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        base.Set<T>().UpdateRange(entities);
+        await SaveChangesAsync(cToken);
     }
 
     public async Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, IPersistentSql
     {
-        try
-        {
-            base.Set<T>().Remove(entity);
-            await SaveChangesAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        base.Set<T>().Remove(entity);
+        await SaveChangesAsync(cToken);
     }
     public async Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, IPersistentSql
     {
-        try
-        {
-            base.Set<T>().RemoveRange(entities);
-            await SaveChangesAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        base.Set<T>().RemoveRange(entities);
+        await SaveChangesAsync(cToken);
     }
     #endregion
 
@@ -130,27 +101,13 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
-        try
-        {
-            await Set<T>().AddAsync(entity, cToken);
-            await SaveChangesAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        await Set<T>().AddAsync(entity, cToken);
+        await SaveChangesAsync(cToken);
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
     {
-        try
-        {
-            await Set<T>().AddRangeAsync(entities, cToken);
-            await SaveChangesAsync(cToken);
-        }
-        catch (Exception exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        await Set<T>().AddRangeAsync(entities, cToken);
+        await SaveChangesAsync(cToken);
     }
 
     public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentSql
@@ -188,12 +145,12 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             return entities;
         }
-        catch (Exception exception)
+        catch
         {
             if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.RollbackAsync(cToken);
 
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {
@@ -225,12 +182,12 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
 
             return entities.Length;
         }
-        catch (Exception exception)
+        catch
         {
             if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.RollbackAsync(cToken);
 
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {
@@ -254,15 +211,15 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
     public async Task CommitTransaction(CancellationToken cToken)
     {
         if (Database.CurrentTransaction is null)
-            throw new PersistenceException("No transaction to commit.");
+            throw new InvalidOperationException("No transaction to commit.");
 
         try
         {
             await Database.CurrentTransaction.CommitAsync(cToken);
         }
-        catch (Exception exception)
+        catch
         {
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {
@@ -281,9 +238,9 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         {
             await Database.CurrentTransaction.RollbackAsync(cToken);
         }
-        catch (Exception exception)
+        catch
         {
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {

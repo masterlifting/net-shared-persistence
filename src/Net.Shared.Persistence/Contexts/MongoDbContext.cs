@@ -1,4 +1,6 @@
-﻿using MongoDB.Bson;
+﻿using System.Linq.Expressions;
+
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
@@ -7,10 +9,7 @@ using MongoDB.Driver.Linq;
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
-using Net.Shared.Persistence.Abstractions.Models.Exceptions;
 using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
-
-using System.Linq.Expressions;
 
 namespace Net.Shared.Persistence.Contexts;
 
@@ -69,27 +68,13 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
-        try
-        {
-            await GetCollection<T>().InsertOneAsync(entity, null, cToken);
-            return;
-        }
-        catch (MongoException exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        await GetCollection<T>().InsertOneAsync(entity, null, cToken);
+        return;
     }
     public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
     {
-        try
-        {
-            await GetCollection<T>().InsertManyAsync(entities, null, cToken);
-            return;
-        }
-        catch (MongoException exception)
-        {
-            throw new PersistenceException(exception);
-        }
+        await GetCollection<T>().InsertManyAsync(entities, null, cToken);
+        return;
     }
 
     public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, IPersistent, IPersistentNoSql
@@ -139,12 +124,12 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             return documents;
         }
-        catch (Exception exception)
+        catch
         {
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {
@@ -171,7 +156,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             var documents = query.ToArray();
 
-            if (!documents.Any())
+            if (documents.Length == 0)
                 return 0;
 
             var deleteOptions = new DeleteOptions
@@ -190,12 +175,12 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
             return documents.Length;
         }
-        catch (Exception exception)
+        catch
         {
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {
@@ -216,15 +201,15 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     public async Task CommitTransaction(CancellationToken cToken)
     {
         if (_session?.IsInTransaction != true)
-            throw new PersistenceException("The transaction session was not found");
+            throw new InvalidOperationException("The transaction session was not found");
 
         try
         {
             await _session.CommitTransactionAsync(cToken);
         }
-        catch (Exception exception)
+        catch
         {
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {
@@ -241,9 +226,9 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
         {
             await _session.AbortTransactionAsync(cToken);
         }
-        catch (Exception exception)
+        catch
         {
-            throw new PersistenceException(exception);
+            throw;
         }
         finally
         {

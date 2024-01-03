@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared-exceptions\src\Net.Shared.Exceptions\Net.Shared.Exceptions.csproj" />
     <ProjectReference Include="..\..\..\shared\src\Net.Shared.Abstractions\Net.Shared.Abstractions.csproj" />
   </ItemGroup>
 

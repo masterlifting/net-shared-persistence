@@ -3,7 +3,6 @@ using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.NoSql;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
-using Net.Shared.Persistence.Abstractions.Models.Exceptions;
 using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
@@ -45,13 +44,13 @@ public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
 
     public async Task<T> GetCatalogById<T>(int id, CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentNoSql =>
         await _context.FindSingle<T>(new() { Filter = x => x.Id == id }, cToken)
-        ?? throw new PersistenceException($"Catalog {typeof(T).Name} with id {id} not found");
+        ?? throw new InvalidOperationException($"Catalog {typeof(T).Name} with id {id} not found");
     public Task<Dictionary<int, T>> GetCatalogsDictionaryById<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentNoSql =>
             Task.Run(() => _context.GetQuery<T>().ToDictionary(x => x.Id), cToken);
 
     public async Task<T> GetCatalogByName<T>(string name, CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentNoSql =>
         await _context.FindSingle<T>(new() { Filter = x => x.Name.Equals(name) }, cToken)
-        ?? throw new PersistenceException($"Catalog {typeof(T).Name} with name {name} not found");
+        ?? throw new InvalidOperationException($"Catalog {typeof(T).Name} with name {name} not found");
     public Task<Dictionary<string, T>> GetCatalogsDictionaryByName<T>(CancellationToken cToken = default) where T : class, IPersistentCatalog, IPersistentNoSql =>
             Task.Run(() => _context.GetQuery<T>().ToDictionary(x => x.Name), cToken);
 
@@ -62,7 +61,7 @@ public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
         var name = Enum.GetName(typeof(TEnum), value);
 
         return name is null
-            ? throw new PersistenceException($"Enum {typeof(TEnum).Name} does not contain value {value}")
+            ? throw new InvalidOperationException($"Enum {typeof(TEnum).Name} does not contain value {value}")
             : await GetCatalogByName<T>(name, cToken);
     }
     public Task<Dictionary<TEnum, T>> GetCatalogsDictionaryByEnum<T, TEnum>(CancellationToken cToken)

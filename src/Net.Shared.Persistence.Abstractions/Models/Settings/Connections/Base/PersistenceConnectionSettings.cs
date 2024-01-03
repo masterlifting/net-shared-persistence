@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
-using Net.Shared.Abstractions.Models.Settings;
+using Net.Shared.Abstractions.Models.Settings.Connection;
 
 namespace Net.Shared.Persistence.Abstractions.Models.Settings.Connections.Base;
 
