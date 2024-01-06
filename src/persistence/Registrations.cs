@@ -30,7 +30,7 @@ public static class Registrations
     /// <typeparam name="T">
     /// <see cref="PostgreSqlContext"/> type of the context.
     /// </typeparam>
-    public static void AddPostgreSql<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : PostgreSqlContext
+    public static IServiceCollection AddPostgreSql<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : PostgreSqlContext
     {
         services
             .AddOptions<PostgreSqlConnectionSettings>()
@@ -80,6 +80,8 @@ public static class Registrations
                 services.AddTransient<IPersistenceSqlProcessRepository, PostgreSqlProcessRepository>();
                 break;
         }
+
+        return services;
     }
 
     /// <summary>
@@ -94,7 +96,7 @@ public static class Registrations
     /// <typeparam name="T">
     /// <see cref="MongoDbContext"/> type of the context.
     /// </typeparam>
-    public static void AddMongoDb<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : MongoDbContext
+    public static IServiceCollection AddMongoDb<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : MongoDbContext
     {
         services
             .AddOptions<MongoDbConnectionSettings>()
@@ -144,6 +146,8 @@ public static class Registrations
                 services.AddTransient<IPersistenceNoSqlProcessRepository, MongoDbProcessRepository>();
                 break;
         }
+
+        return services;
     }
 
     /// <summary>
@@ -158,7 +162,7 @@ public static class Registrations
     /// <typeparam name="T">
     /// <see cref="AzureTableContext"/> type of the context.
     /// </typeparam>
-    public static void AddAzureTable<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : AzureTableContext
+    public static IServiceCollection AddAzureTable<T>(this IServiceCollection services, ServiceLifetime lifetime) where T : AzureTableContext
     {
         services
             .AddOptions<AzureTableConnectionSettings>()
@@ -196,5 +200,7 @@ public static class Registrations
                 services.AddTransient<IPersistenceProcessRepository<ITableEntity>, AzureTableProcessRepository>();
                 break;
         }
+
+        return services;
     }
 }
