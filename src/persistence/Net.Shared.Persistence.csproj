@@ -20,8 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared\src\Net.Shared\Net.Shared.csproj" />
-    <ProjectReference Include="..\Net.Shared.Persistence.Abstractions\Net.Shared.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\shared\src\shared\Net.Shared.csproj" />
+    <ProjectReference Include="..\persistence-abstractions\Net.Shared.Persistence.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
