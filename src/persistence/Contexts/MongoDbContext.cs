@@ -165,7 +165,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             };
 
 
-            for (int i = 0; i < documents.Length - 1; i++)
+            for (int i = 0; i < documents.Length; i++)
             {
                 await collection.DeleteOneAsync(_session, options.Filter, deleteOptions, cToken);
             }
