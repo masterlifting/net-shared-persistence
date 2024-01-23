@@ -9,38 +9,18 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
+public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersistenceNoSqlProcessRepository
 {
-    public MongoDbProcessRepository(MongoDbContext context)
-    {
-        _context = context;
-        Context = context;
-    }
+    private readonly MongoDbContext _context = context;
+    public IPersistenceNoSqlContext Context { get; } = context;
 
-    #region PRIVATE FIELDS
-    private readonly MongoDbContext _context;
-    #endregion
-
-    #region PUBLIC PROPERTIES
-    public IPersistenceNoSqlContext Context { get; }
-    #endregion
-
-    #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcessStep =>
         _context.FindMany<T>(new(), cToken);
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        var updater = (T x) =>
-        {
-            x.HostId = hostId;
-            x.StatusId = (int)ProcessStatuses.Processing;
-            x.Attempt++;
-            x.Updated = updated;
-        };
-
-        var options = new PersistenceUpdateOptions<T>(updater)
+        var options = new PersistenceUpdateOptions<T>(Update)
         {
             QueryOptions = new()
             {
@@ -48,24 +28,26 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                     x.HostId == null || x.HostId == hostId
                     && x.StepId == step.Id
                     && x.StatusId == (int)ProcessStatuses.Ready,
-                Take = limit
+                Take = limit,
+                OrderBy = x => x.Updated
             }
         };
 
         return await _context.Update(options, cToken);
+
+        void Update(T x)
+        {
+            x.HostId = hostId;
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
+            x.Updated = updated;
+        }
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        var updater = (T x) =>
-        {
-            x.StatusId = (int)ProcessStatuses.Processing;
-            x.Attempt++;
-            x.Updated = updated;
-        };
-
-        var options = new PersistenceUpdateOptions<T>(updater)
+        var options = new PersistenceUpdateOptions<T>(Update)
         {
             QueryOptions = new()
             {
@@ -80,12 +62,32 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
         };
 
         return await _context.Update(options, cToken);
+
+        void Update(T x)
+        {
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
+            x.Updated = updated;
+        }
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
-        var updater = (T x) =>
+        var options = new PersistenceUpdateOptions<T>(Update, data)
+        {
+            QueryOptions = new()
+            {
+                Filter = x =>
+                x.HostId == hostId
+                && x.StepId == currentStep.Id
+                && x.StatusId == (int)ProcessStatuses.Processing
+            }
+        };
+
+        await _context.Update(options, cToken);
+        
+        void Update(T x)
         {
             x.Updated = updated;
 
@@ -104,20 +106,6 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
                         break;
                 }
             }
-        };
-
-        var options = new PersistenceUpdateOptions<T>(updater,data)
-        {
-            QueryOptions = new()
-            {
-                Filter = x =>
-                x.HostId == hostId
-                && x.StepId == currentStep.Id
-                && x.StatusId == (int)ProcessStatuses.Processing
-            }
-        };
-
-        await _context.Update(options, cToken);
+        }
     }
-    #endregion
 }

@@ -11,23 +11,11 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
-public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessRepository
+public sealed class PostgreSqlProcessRepository(PostgreSqlContext context) : IPersistenceSqlProcessRepository
 {
-    public PostgreSqlProcessRepository(PostgreSqlContext context)
-    {
-        _context = context;
-        Context = context;
-    }
+    private readonly PostgreSqlContext _context = context;
+    public IPersistenceSqlContext Context { get; } = context;
 
-    #region PRIVATE FIELDS
-    private readonly PostgreSqlContext _context;
-    #endregion
-
-    #region PUBLIC PROPERTIES
-    public IPersistenceSqlContext Context { get; }
-    #endregion
-
-    #region PUBLIC METHODS
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcessStep =>
         _context.FindMany<T>(new(), cToken);
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
@@ -40,6 +28,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 && x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Ready)
             .Take(limit)
+            .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
                 .SetProperty(y => y.HostId, hostId)
                 .SetProperty(y => y.StatusId, (int)ProcessStatuses.Processing)
@@ -68,6 +57,7 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                 && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
                 && x.Attempt < maxAttempts)
             .Take(limit)
+            .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
                 .SetProperty(y => y.StatusId, (int)ProcessStatuses.Processing)
                 .SetProperty(y => y.Attempt, y => y.Attempt + 1)
@@ -88,7 +78,20 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
     {
         var updated = DateTime.UtcNow;
 
-        var updater = (T x) =>
+        var options = new PersistenceUpdateOptions<T>(Update,data)
+        {
+            QueryOptions = new()
+            {
+                Filter = x =>
+                    x.HostId == hostId
+                    && x.StepId == currentStep.Id
+                    && x.StatusId == (int)ProcessStatuses.Processing
+            }
+        };
+
+        await _context.Update(options, cToken);
+        
+        void Update(T x)
         {
             x.Updated = updated;
 
@@ -107,20 +110,6 @@ public sealed class PostgreSqlProcessRepository : IPersistenceSqlProcessReposito
                         break;
                 }
             }
-        };
-
-        var options = new PersistenceUpdateOptions<T>(updater,data)
-        {
-            QueryOptions = new()
-            {
-                Filter = x =>
-                    x.HostId == hostId
-                    && x.StepId == currentStep.Id
-                    && x.StatusId == (int)ProcessStatuses.Processing
-            }
-        };
-
-        await _context.Update(options, cToken);
+        }
     }
-    #endregion
 }
