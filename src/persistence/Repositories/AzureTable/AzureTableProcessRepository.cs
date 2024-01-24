@@ -1,4 +1,6 @@
-﻿using Azure.Data.Tables;
+﻿using System.Linq.Expressions;
+
+using Azure.Data.Tables;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -14,6 +16,10 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
 
     Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessSteps<T>(CancellationToken cToken) =>
         _context.FindMany<T>(new(), cToken);
+    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessSteps<T>(Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
+    }
     Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken)
     {
         var updated = DateTime.UtcNow;
@@ -41,6 +47,10 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
             x.Updated = updated;
         }
     }
+    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
+    }
     async Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
     {
         var updated = DateTime.UtcNow;
@@ -67,6 +77,10 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
             x.Attempt++;
             x.Updated = updated;
         }
+    }
+    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
     }
     async Task IPersistenceProcessRepository<ITableEntity>.SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken)
     {

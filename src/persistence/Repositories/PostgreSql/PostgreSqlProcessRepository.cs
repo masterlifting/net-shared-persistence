@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
+
+using Microsoft.EntityFrameworkCore;
 
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.Sql;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
@@ -18,6 +21,10 @@ public sealed class PostgreSqlProcessRepository(PostgreSqlContext context) : IPe
 
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcessStep =>
         _context.FindMany<T>(new(), cToken);
+    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetProcessSteps<T>(Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
+    }
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
@@ -46,6 +53,10 @@ public sealed class PostgreSqlProcessRepository(PostgreSqlContext context) : IPe
 
         return result;
     }
+    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
+    }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
@@ -73,6 +84,10 @@ public sealed class PostgreSqlProcessRepository(PostgreSqlContext context) : IPe
             .ToArrayAsync(cToken);
 
         return result;
+    }
+    Task<T[]> IPersistenceProcessRepository<IPersistentSql>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, IPersistentSql, IPersistentProcess
     {

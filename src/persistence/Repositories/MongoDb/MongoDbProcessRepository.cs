@@ -1,6 +1,9 @@
-﻿using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+﻿using System.Linq.Expressions;
+
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
+using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.NoSql;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
@@ -16,6 +19,10 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
 
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcessStep =>
         _context.FindMany<T>(new(), cToken);
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessSteps<T>(Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
+    }
     public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
@@ -43,6 +50,10 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
             x.Updated = updated;
         }
     }
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
+    }
     public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
@@ -69,6 +80,10 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
             x.Attempt++;
             x.Updated = updated;
         }
+    }
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    {
+        throw new NotImplementedException();
     }
     public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
