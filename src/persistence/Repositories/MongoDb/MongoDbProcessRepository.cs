@@ -23,7 +23,7 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
     {
         throw new NotImplementedException();
     }
-    public async Task<T[]> GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -32,7 +32,7 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
             QueryOptions = new()
             {
                 Filter = x =>
-                    x.HostId == null || x.HostId == hostId
+                    x.CorrelationId == null || x.CorrelationId == correlationId
                     && x.StepId == step.Id
                     && x.StatusId == (int)ProcessStatuses.Ready,
                 Take = limit,
@@ -44,17 +44,17 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
 
         void Update(T x)
         {
-            x.HostId = hostId;
+            x.CorrelationId = correlationId;
             x.StatusId = (int)ProcessStatuses.Processing;
             x.Attempt++;
             x.Updated = updated;
         }
     }
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
-    public async Task<T[]> GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -63,7 +63,7 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
             QueryOptions = new()
             {
                 Filter = x =>
-                    x.HostId == hostId
+                    x.CorrelationId == correlationId
                     && x.StepId == step.Id
                     && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
                     && x.Attempt < maxAttempts,
@@ -81,11 +81,11 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
             x.Updated = updated;
         }
     }
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
-    public async Task SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+    public async Task SetProcessedData<T>(Guid correlationId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
     {
         var updated = DateTime.UtcNow;
 
@@ -94,7 +94,7 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
             QueryOptions = new()
             {
                 Filter = x =>
-                x.HostId == hostId
+                x.CorrelationId == correlationId
                 && x.StepId == currentStep.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
             }

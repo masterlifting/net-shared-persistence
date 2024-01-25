@@ -20,7 +20,7 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
     {
         throw new NotImplementedException();
     }
-    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, CancellationToken cToken)
     {
         var updated = DateTime.UtcNow;
 
@@ -29,7 +29,7 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
             QueryOptions = new()
             {
                 Filter = x =>
-                    x.HostId == null || x.HostId == hostId
+                    x.CorrelationId == null || x.CorrelationId == correlationId
                     && x.StepId == step.Id
                     && x.StatusId == (int)ProcessStatuses.Ready,
                 Take = limit,
@@ -41,17 +41,17 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
 
         void Update(T x)
         {
-            x.HostId = hostId;
+            x.CorrelationId = correlationId;
             x.StatusId = (int)ProcessStatuses.Processing;
             x.Attempt++;
             x.Updated = updated;
         }
     }
-    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessableData<T>(Guid hostId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
-    async Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
+    async Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken)
     {
         var updated = DateTime.UtcNow;
 
@@ -60,7 +60,7 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
             QueryOptions = new()
             {
                 Filter = x =>
-                    x.HostId == hostId
+                    x.CorrelationId == correlationId
                     && x.StepId == step.Id
                     && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
                     && x.Attempt < maxAttempts,
@@ -78,11 +78,11 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
             x.Updated = updated;
         }
     }
-    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetUnprocessedData<T>(Guid hostId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
     {
         throw new NotImplementedException();
     }
-    async Task IPersistenceProcessRepository<ITableEntity>.SetProcessedData<T>(Guid hostId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken)
+    async Task IPersistenceProcessRepository<ITableEntity>.SetProcessedData<T>(Guid correlationId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken)
     {
         var updated = DateTime.UtcNow;
 
@@ -91,7 +91,7 @@ public sealed class AzureTableProcessRepository(AzureTableContext context) : IPe
             QueryOptions = new()
             {
                 Filter = x =>
-                x.HostId == hostId
+                x.CorrelationId == correlationId
                 && x.StepId == currentStep.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
             }

@@ -2,7 +2,7 @@
 
 public interface IPersistentProcess : IPersistent
 {
-    Guid? HostId { get; set; }
+    Guid? CorrelationId { get; set; }
     int StatusId { get; set; }
     int StepId { get; set; }
     int Attempt { get; set; }
