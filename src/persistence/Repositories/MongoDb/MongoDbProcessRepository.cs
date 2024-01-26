@@ -66,7 +66,7 @@ public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersiste
                     x.CorrelationId == correlationId
                     && x.StepId == step.Id
                     && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
-                    && x.Attempt < maxAttempts,
+                    && x.Attempt <= maxAttempts,
                 OrderBy = x => x.Updated,
                 Take = limit
             }

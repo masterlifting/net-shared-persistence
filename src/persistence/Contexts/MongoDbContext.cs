@@ -20,6 +20,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     private IClientSessionHandle? _session;
     private bool _isExternalTransaction;
 
+    private static readonly SemaphoreSlim Semaphore = new(1, 1);
+
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
@@ -81,6 +83,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         try
         {
+            await Semaphore.WaitAsync(cToken);
+
             if (!_isExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
@@ -101,7 +105,7 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
 
                 options.QueryOptions.BuildQuery(ref query);
 
-                documents = query.ToArray();
+                documents = [.. query];
             }
 
             if (documents.Length == 0)
@@ -129,12 +133,16 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
+            Semaphore.Release();
+
             throw;
         }
         finally
         {
             if (!_isExternalTransaction)
                 Dispose();
+
+            Semaphore.Release();
         }
     }
 
@@ -142,6 +150,8 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     {
         try
         {
+            await Semaphore.WaitAsync(cToken);
+
             if (!_isExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
@@ -180,12 +190,16 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
+            Semaphore.Release();
+
             throw;
         }
         finally
         {
             if (!_isExternalTransaction)
                 Dispose();
+
+            Semaphore.Release();
         }
     }
 

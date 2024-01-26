@@ -66,7 +66,7 @@ public sealed class PostgreSqlProcessRepository(PostgreSqlContext context) : IPe
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
-                && x.Attempt < maxAttempts)
+                && x.Attempt <= maxAttempts)
             .Take(limit)
             .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
