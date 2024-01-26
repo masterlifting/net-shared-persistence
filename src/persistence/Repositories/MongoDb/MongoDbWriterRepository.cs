@@ -20,6 +20,8 @@ public sealed class MongoDbWriterRepository : IPersistenceNoSqlWriterRepository
         _context = context;
         Context = context;
         _repositoryInfo = $"MongoDb {GetHashCode()}";
+
+        _log.Warn(nameof(MongoDbWriterRepository) + ' ' + GetHashCode());
     }
 
     #region PRIVATE FIELDS

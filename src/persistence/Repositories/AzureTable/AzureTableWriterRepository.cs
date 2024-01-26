@@ -1,6 +1,9 @@
 ﻿using Azure.Data.Tables;
 
+using Microsoft.Extensions.Logging;
+
 using Net.Shared.Abstractions.Models.Data;
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
@@ -11,9 +14,11 @@ public sealed class AzureTableWriterRepository : IPersistenceWriterRepository<IT
 {
     private readonly AzureTableContext _context;
 
-    public AzureTableWriterRepository(AzureTableContext context)
+    public AzureTableWriterRepository(ILogger<AzureTableWriterRepository> logger, AzureTableContext context)
     {
         _context = context;
+
+        logger.Warn(nameof(AzureTableWriterRepository) + ' ' + GetHashCode());
     }
     Task IPersistenceWriterRepository<ITableEntity>.CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken)
     {

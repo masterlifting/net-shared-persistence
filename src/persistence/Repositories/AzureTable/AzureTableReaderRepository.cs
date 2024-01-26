@@ -1,5 +1,8 @@
 ﻿using Azure.Data.Tables;
 
+using Microsoft.Extensions.Logging;
+
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
@@ -9,8 +12,13 @@ namespace Net.Shared.Persistence.Repositories.AzureTable;
 public sealed class AzureTableReaderRepository : IPersistenceReaderRepository<ITableEntity>
 {
     private readonly AzureTableContext _context;
-    public AzureTableReaderRepository(AzureTableContext context) => _context = context;
-    
+    public AzureTableReaderRepository(ILogger<AzureTableReaderRepository> logger, AzureTableContext context)
+    {
+        _context = context;
+
+        logger.Warn(nameof(AzureTableReaderRepository) + ' ' + GetHashCode());
+    }
+
     Task<T?> IPersistenceReaderRepository<ITableEntity>.FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class
     {
         throw new NotImplementedException();

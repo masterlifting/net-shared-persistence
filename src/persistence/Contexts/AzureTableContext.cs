@@ -1,5 +1,8 @@
 ﻿using Azure.Data.Tables;
 
+using Microsoft.Extensions.Logging;
+
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -17,9 +20,11 @@ public abstract class AzureTableContext : IPersistenceContext<ITableEntity>
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, ITableEntity =>
         GetTableClient<T>().Query<T>().AsQueryable();
 
-    public AzureTableContext(AzureTableConnectionSettings connectionSettings)
+    public AzureTableContext(ILogger logger, AzureTableConnectionSettings connectionSettings)
     {
         _tableServiceClient = new TableServiceClient(connectionSettings.ConnectionString);
+
+        logger.Warn(nameof(AzureTableContext) + ' ' + GetHashCode());
 
         OnModelCreating(new AzureTableBuilder(_tableServiceClient));
     }

@@ -1,4 +1,7 @@
-﻿using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
+﻿using Microsoft.Extensions.Logging;
+
+using Net.Shared.Extensions.Logging;
+using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.NoSql;
@@ -9,10 +12,12 @@ namespace Net.Shared.Persistence.Repositories.MongoDb;
 
 public sealed class MongoDbReaderRepository : IPersistenceNoSqlReaderRepository
 {
-    public MongoDbReaderRepository(MongoDbContext context)
+    public MongoDbReaderRepository(ILogger<MongoDbReaderRepository> logger, MongoDbContext context)
     {
         _context = context;
         Context = context;
+
+        logger.Warn(nameof(MongoDbReaderRepository) + ' ' + GetHashCode());
     }
 
     #region PRIVATE FIELDS

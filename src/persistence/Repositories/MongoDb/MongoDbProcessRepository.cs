@@ -1,5 +1,8 @@
 ﻿using System.Linq.Expressions;
 
+using Microsoft.Extensions.Logging;
+
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
@@ -12,10 +15,19 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public sealed class MongoDbProcessRepository(MongoDbContext context) : IPersistenceNoSqlProcessRepository
+public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
 {
-    private readonly MongoDbContext _context = context;
-    public IPersistenceNoSqlContext Context { get; } = context;
+    private readonly MongoDbContext _context;
+
+    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository> logger, MongoDbContext context)
+    {
+        _context = context;
+        Context = context;
+
+        logger.Warn(nameof(MongoDbProcessRepository) + ' ' + GetHashCode());
+    }
+
+    public IPersistenceNoSqlContext Context { get; }
 
     public Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcessStep =>
         _context.FindMany<T>(new(), cToken);

@@ -1,6 +1,10 @@
 ﻿using System.Linq.Expressions;
 
 using Azure.Data.Tables;
+
+using Microsoft.Extensions.Logging;
+
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -10,9 +14,16 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
-public sealed class AzureTableProcessRepository(AzureTableContext context) : IPersistenceProcessRepository<ITableEntity>
+public sealed class AzureTableProcessRepository : IPersistenceProcessRepository<ITableEntity>
 {
-    private readonly AzureTableContext _context = context;
+    private readonly AzureTableContext _context;
+
+    public AzureTableProcessRepository(ILogger<AzureTableProcessRepository> logger, AzureTableContext context)
+    {
+        _context = context;
+
+        logger.Warn(nameof(AzureTableProcessRepository) + ' ' + GetHashCode());
+    }
 
     Task<T[]> IPersistenceProcessRepository<ITableEntity>.GetProcessSteps<T>(CancellationToken cToken) =>
         _context.FindMany<T>(new(), cToken);

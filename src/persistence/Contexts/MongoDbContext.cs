@@ -1,11 +1,14 @@
 ﻿using System.Linq.Expressions;
 
+using Microsoft.Extensions.Logging;
+
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
+using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -25,12 +28,14 @@ public abstract class MongoDbContext : IPersistenceNoSqlContext
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
-    protected MongoDbContext(MongoDbConnectionSettings connectionSettings)
+    protected MongoDbContext(ILogger logger, MongoDbConnectionSettings connectionSettings)
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
 
         OnModelCreating(new MongoDbBuilder(_dataBase));
+
+        logger.Warn(nameof(MongoDbContext) + ' ' + GetHashCode());
     }
 
     public abstract void OnModelCreating(MongoDbBuilder builder);
