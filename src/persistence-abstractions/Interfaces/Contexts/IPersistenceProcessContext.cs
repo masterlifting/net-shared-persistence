@@ -1,11 +1,10 @@
-﻿using System.Linq.Expressions;
-
+﻿using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
-using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
+using System.Linq.Expressions;
 
-namespace Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
+namespace Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 
-public interface IPersistenceProcessRepository
+public interface IPersistenceProcessContext
 {
     Task<T[]> GetProcessSteps<T>(CancellationToken cToken) where T : class, IPersistentProcessStep;
     Task<T[]> GetProcessSteps<T>(Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, IPersistentProcessStep;
