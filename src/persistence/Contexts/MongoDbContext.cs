@@ -16,7 +16,7 @@ using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
 
 namespace Net.Shared.Persistence.Contexts;
 
-public abstract class MongoDbContext : IPersistenceNoSqlContext, IPersistenceProcessContext
+public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
 {
     private readonly IMongoDatabase _dataBase;
     private readonly MongoClient _client;

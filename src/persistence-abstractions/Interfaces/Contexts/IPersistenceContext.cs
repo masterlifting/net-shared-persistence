@@ -5,8 +5,6 @@ namespace Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 
 public interface IPersistenceContext<TEntity> : IDisposable
 {
-    IQueryable<T> GetQuery<T>() where T : class, IPersistent, TEntity;
-
     Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, TEntity;
 
     Task<T?> FindFirst<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, IPersistent, TEntity;

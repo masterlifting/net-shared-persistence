@@ -2,12 +2,11 @@
 
 using Microsoft.Extensions.Logging;
 
+using Net.Shared.Extensions.Expression;
 using Net.Shared.Extensions.Logging;
-using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
-using Net.Shared.Persistence.Abstractions.Interfaces.Repositories.NoSql;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
 
@@ -15,28 +14,18 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepository
+public class MongoDbProcessRepository<TEntity> : IPersistenceProcessRepository<TEntity> where TEntity : IPersistentNoSql, IPersistentProcess
 {
     private readonly MongoDbContext _context;
 
-    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository> logger, MongoDbContext context)
+    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository<TEntity>> logger, MongoDbContext context)
     {
         _context = context;
-        Context = context;
-
-        logger.Warn(nameof(MongoDbProcessRepository) + ' ' + GetHashCode());
+        logger.Warn(nameof(MongoDbProcessRepository<TEntity>) + ' ' + GetHashCode());
     }
-
-    public IPersistenceNoSqlContext Context { get; }
-
-    public Task<T[]> GetProcessSteps<T>(CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcessStep =>
-        _context.FindMany<T>(new(), cToken);
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessSteps<T>(Expression<Func<T, bool>> filter, CancellationToken cToken)
-    {
-        throw new NotImplementedException();
-    }
-    public async Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
-    {
+    
+    public Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, TEntity
+    { 
         var updated = DateTime.UtcNow;
 
         var options = new PersistenceUpdateOptions<T>(Update)
@@ -52,7 +41,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             }
         };
 
-        return await _context.Update(options, cToken);
+        return _context.Update(options, cToken);
 
         void Update(T x)
         {
@@ -62,11 +51,35 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         }
     }
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    public Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
-        throw new NotImplementedException();
+        var updated = DateTime.UtcNow;
+
+        var options = new PersistenceUpdateOptions<T>(Update)
+        {
+            QueryOptions = new()
+            {
+                Filter = filter.Combine(x =>
+                    x.CorrelationId == null || x.CorrelationId == correlationId
+                    && x.StepId == step.Id
+                    && x.StatusId == (int)ProcessStatuses.Ready),
+                Take = limit,
+                OrderBy = x => x.Updated
+            }
+        };
+
+        return _context.Update(options, cToken);
+
+        void Update(T x)
+        {
+            x.CorrelationId = correlationId;
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
+            x.Updated = updated;
+        }
     }
-    public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+
+    public Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
@@ -84,7 +97,7 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             }
         };
 
-        return await _context.Update(options, cToken);
+        return _context.Update(options, cToken);
 
         void Update(T x)
         {
@@ -93,11 +106,35 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             x.Updated = updated;
         }
     }
-    Task<T[]> IPersistenceProcessRepository<IPersistentNoSql>.GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken)
+    public Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
-        throw new NotImplementedException();
+        var updated = DateTime.UtcNow;
+
+        var options = new PersistenceUpdateOptions<T>(Update)
+        {
+            QueryOptions = new()
+            {
+                Filter = filter.Combine(x =>
+                    x.CorrelationId == correlationId
+                    && x.StepId == step.Id
+                    && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
+                    && x.Attempt <= maxAttempts),
+                OrderBy = x => x.Updated,
+                Take = limit
+            }
+        };
+
+        return _context.Update(options, cToken);
+
+        void Update(T x)
+        {
+            x.StatusId = (int)ProcessStatuses.Processing;
+            x.Attempt++;
+            x.Updated = updated;
+        }
     }
-    public async Task SetProcessedData<T>(Guid correlationId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken = default) where T : class, IPersistentNoSql, IPersistentProcess
+
+    public Task SetProcessedData<T>(Guid correlationId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
@@ -112,8 +149,8 @@ public sealed class MongoDbProcessRepository : IPersistenceNoSqlProcessRepositor
             }
         };
 
-        await _context.Update(options, cToken);
-        
+        return _context.Update(options, cToken);
+
         void Update(T x)
         {
             x.Updated = updated;

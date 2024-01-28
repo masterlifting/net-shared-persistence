@@ -8,7 +8,7 @@ using Net.Shared.Persistence.Abstractions.Models.Settings.Connections;
 
 namespace Net.Shared.Persistence.Contexts;
 
-public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
+public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersistentSql>
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly PostgreSqlConnectionSettings _connectionSettings;
@@ -29,7 +29,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceSqlContext
         base.OnConfiguring(builder);
     }
 
-    #region Spetialized API
+    #region Specialized API
     public string GetTableName<T>() where T : class, IPersistentSql =>
         Model.FindEntityType(typeof(T))?.ShortName() ?? throw new InvalidOperationException($"Searching a table name {typeof(T).Name} was not found.");
 
