@@ -34,15 +34,12 @@ public static class Registrations
         switch (lifetime)
         {
             case ServiceLifetime.Scoped:
-                services.AddScoped<PostgreSqlContext>();
                 services.AddScoped<T>();
                 break;
             case ServiceLifetime.Singleton:
-                services.AddSingleton<PostgreSqlContext>();
                 services.AddSingleton<T>();
                 break;
             case ServiceLifetime.Transient:
-                services.AddTransient<PostgreSqlContext>();
                 services.AddTransient<T>();
                 break;
         }
@@ -76,15 +73,12 @@ public static class Registrations
         switch (lifetime)
         {
             case ServiceLifetime.Scoped:
-                services.AddScoped<MongoDbContext>();
                 services.AddScoped<T>();
                 break;
             case ServiceLifetime.Singleton:
-                services.AddSingleton<MongoDbContext>();
                 services.AddSingleton<T>();
                 break;
             case ServiceLifetime.Transient:
-                services.AddTransient<MongoDbContext>();
                 services.AddTransient<T>();
                 break;
         }
@@ -118,15 +112,12 @@ public static class Registrations
         switch (lifetime)
         {
             case ServiceLifetime.Scoped:
-                services.AddScoped<AzureTableContext>();
                 services.AddScoped<T>();
                 break;
             case ServiceLifetime.Singleton:
-                services.AddSingleton<AzureTableContext>();
                 services.AddSingleton<T>();
                 break;
             case ServiceLifetime.Transient:
-                services.AddTransient<AzureTableContext>();
                 services.AddTransient<T>();
                 break;
         }

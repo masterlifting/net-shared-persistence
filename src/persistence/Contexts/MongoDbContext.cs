@@ -23,7 +23,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     private IClientSessionHandle? _session;
     private bool _isExternalTransaction;
 
-    private static readonly SemaphoreSlim Semaphore = new(1, 1);
+    private readonly SemaphoreSlim _semaphore = new(1);
 
     private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
@@ -88,7 +88,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     {
         try
         {
-            await Semaphore.WaitAsync(cToken);
+            await _semaphore.WaitAsync(cToken);
 
             if (!_isExternalTransaction && _session is null)
             {
@@ -138,7 +138,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
-            Semaphore.Release();
+            _semaphore.Release();
 
             throw;
         }
@@ -147,7 +147,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
             if (!_isExternalTransaction)
                 Dispose();
 
-            Semaphore.Release();
+            _semaphore.Release();
         }
     }
 
@@ -155,7 +155,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     {
         try
         {
-            await Semaphore.WaitAsync(cToken);
+            await _semaphore.WaitAsync(cToken);
 
             if (!_isExternalTransaction && _session is null)
             {
@@ -195,7 +195,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
             if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
-            Semaphore.Release();
+            _semaphore.Release();
 
             throw;
         }
@@ -204,7 +204,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
             if (!_isExternalTransaction)
                 Dispose();
 
-            Semaphore.Release();
+            _semaphore.Release();
         }
     }
 

@@ -9,19 +9,19 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public class MongoDbWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : IPersistentNoSql
+public class MongoDbWriterRepository<TContext, TEntity> : IPersistenceWriterRepository<TEntity> 
+    where TContext : MongoDbContext
+    where TEntity : IPersistentNoSql
 {
     private readonly ILogger _log;
-    private readonly MongoDbContext _context;
+    private readonly TContext _context;
 
     private readonly string _repository;
-    public MongoDbWriterRepository(ILogger<MongoDbWriterRepository<TEntity>> logger, MongoDbContext context)
+    public MongoDbWriterRepository(ILogger<MongoDbWriterRepository<TContext, TEntity>> logger, TContext context)
     {
         _log = logger;
         _context = context;
-        _repository = nameof(MongoDbWriterRepository<TEntity>) + ' ' + GetHashCode();
-
-        _log.Warn(_repository);
+        _repository = nameof(MongoDbWriterRepository<TContext, TEntity>) + ' ' + GetHashCode();
     }
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity

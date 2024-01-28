@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
@@ -10,15 +8,11 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
-public class PostgreSqlReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : IPersistentSql
+public class PostgreSqlReaderRepository<TContext, TEntity>(TContext context) : IPersistenceReaderRepository<TEntity>
+    where TContext : PostgreSqlContext
+    where TEntity : IPersistentSql
 {
-    private readonly PostgreSqlContext _context;
-
-    public PostgreSqlReaderRepository(ILogger<PostgreSqlReaderRepository<TEntity>> logger, PostgreSqlContext context)
-    {
-        _context = context;
-        logger.Warn(nameof(PostgreSqlReaderRepository<TEntity>) + ' ' + GetHashCode());
-    }
+    private readonly PostgreSqlContext _context = context;
 
     public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity =>
         _context.IsExists(options, cToken);

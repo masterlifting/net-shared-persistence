@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-using Net.Shared.Extensions.Logging;
-using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
+﻿using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -9,14 +6,11 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public class MongoDbReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : IPersistentNoSql
+public class MongoDbReaderRepository<TContext, TEntity>(TContext context) : IPersistenceReaderRepository<TEntity>
+    where TContext : MongoDbContext
+    where TEntity : IPersistentNoSql
 {
-    private readonly MongoDbContext _context;
-    public MongoDbReaderRepository(ILogger<MongoDbReaderRepository<TEntity>> logger, MongoDbContext context)
-    {
-        _context = context;
-        logger.Warn(nameof(MongoDbReaderRepository<TEntity>) + ' ' + GetHashCode());
-    }
+    private readonly TContext _context = context;
 
     public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity =>
         _context.IsExists(options, cToken);

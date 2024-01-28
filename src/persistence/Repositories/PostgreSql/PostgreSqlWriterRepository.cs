@@ -9,19 +9,19 @@ using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
-public class PostgreSqlWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : IPersistentSql
+public class PostgreSqlWriterRepository<TContext, TEntity> : IPersistenceWriterRepository<TEntity>
+    where TContext : PostgreSqlContext
+    where TEntity : IPersistentSql
 {
     private readonly ILogger _log;
-    private readonly PostgreSqlContext _context;
+    private readonly TContext _context;
 
     private readonly string _repository;
-    public PostgreSqlWriterRepository(ILogger<PostgreSqlWriterRepository<TEntity>> logger, PostgreSqlContext context)
+    public PostgreSqlWriterRepository(ILogger<PostgreSqlWriterRepository<TContext, TEntity>> logger, TContext context)
     {
         _log = logger;
         _context = context;
-        _repository = nameof(PostgreSqlWriterRepository<TEntity>) + ' ' + GetHashCode();
-
-        _log.Warn(_repository);
+        _repository = nameof(PostgreSqlWriterRepository<TContext, TEntity>) + ' ' + GetHashCode();
     }
 
     public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity

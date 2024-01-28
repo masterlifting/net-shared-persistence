@@ -1,9 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-using Microsoft.Extensions.Logging;
-
 using Net.Shared.Extensions.Expression;
-using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
@@ -14,16 +11,12 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public class MongoDbProcessRepository<TEntity> : IPersistenceProcessRepository<TEntity> where TEntity : IPersistentNoSql, IPersistentProcess
+public class MongoDbProcessRepository<TContext, TEntity>(TContext context) : IPersistenceProcessRepository<TEntity> 
+    where TContext : MongoDbContext
+    where TEntity : IPersistentNoSql, IPersistentProcess
 {
-    private readonly MongoDbContext _context;
+    private readonly TContext _context = context;
 
-    public MongoDbProcessRepository(ILogger<MongoDbProcessRepository<TEntity>> logger, MongoDbContext context)
-    {
-        _context = context;
-        logger.Warn(nameof(MongoDbProcessRepository<TEntity>) + ' ' + GetHashCode());
-    }
-    
     public Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, TEntity
     { 
         var updated = DateTime.UtcNow;
@@ -51,7 +44,7 @@ public class MongoDbProcessRepository<TEntity> : IPersistenceProcessRepository<T
             x.Updated = updated;
         }
     }
-    public Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
+    public async Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
@@ -59,16 +52,18 @@ public class MongoDbProcessRepository<TEntity> : IPersistenceProcessRepository<T
         {
             QueryOptions = new()
             {
-                Filter = filter.Combine(x =>
+                Filter = x =>
                     x.CorrelationId == null || x.CorrelationId == correlationId
                     && x.StepId == step.Id
-                    && x.StatusId == (int)ProcessStatuses.Ready),
+                    && x.StatusId == (int)ProcessStatuses.Ready,
                 Take = limit,
                 OrderBy = x => x.Updated
             }
         };
 
-        return _context.Update(options, cToken);
+        var result = await _context.Update(options, cToken);
+
+        return result.Where(filter.Compile()).ToArray();
 
         void Update(T x)
         {
@@ -106,7 +101,7 @@ public class MongoDbProcessRepository<TEntity> : IPersistenceProcessRepository<T
             x.Updated = updated;
         }
     }
-    public Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
+    public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
@@ -124,7 +119,9 @@ public class MongoDbProcessRepository<TEntity> : IPersistenceProcessRepository<T
             }
         };
 
-        return _context.Update(options, cToken);
+        var result = await _context.Update(options, cToken);
+
+        return result.Where(filter.Compile()).ToArray();
 
         void Update(T x)
         {

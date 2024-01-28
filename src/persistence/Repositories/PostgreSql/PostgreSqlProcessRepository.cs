@@ -1,10 +1,7 @@
 ﻿using System.Linq.Expressions;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-using Net.Shared.Extensions.Expression;
-using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
@@ -15,15 +12,11 @@ using static Net.Shared.Persistence.Abstractions.Constants.Enums;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
-public class PostgreSqlProcessRepository<TEntity> : IPersistenceProcessRepository<TEntity> where TEntity : IPersistentSql, IPersistentProcess
+public class PostgreSqlProcessRepository<TContext, TEntity>(TContext context) : IPersistenceProcessRepository<TEntity>
+    where TContext : PostgreSqlContext
+    where TEntity : IPersistentSql, IPersistentProcess
 {
-    private readonly PostgreSqlContext _context;
-
-    public PostgreSqlProcessRepository(ILogger<PostgreSqlProcessRepository<TEntity>> logger, PostgreSqlContext context)
-    {
-        _context = context;
-        logger.Warn(nameof(PostgreSqlProcessRepository<TEntity>) + ' ' + GetHashCode());
-    }
+    private readonly TContext _context = context;
 
     public async Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, CancellationToken cToken) where T : class, TEntity
     {
@@ -58,10 +51,10 @@ public class PostgreSqlProcessRepository<TEntity> : IPersistenceProcessRepositor
         var updated = DateTime.UtcNow;
 
         var updatedCount = await _context.GetQuery<T>()
-            .Where(filter.Combine(x =>
+            .Where(x =>
                 x.CorrelationId == null || x.CorrelationId == correlationId
                 && x.StepId == step.Id
-                && x.StatusId == (int)ProcessStatuses.Ready))
+                && x.StatusId == (int)ProcessStatuses.Ready)
             .Take(limit)
             .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
@@ -79,7 +72,7 @@ public class PostgreSqlProcessRepository<TEntity> : IPersistenceProcessRepositor
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
-        return result;
+        return result.Where(filter.Compile()).ToArray();
     }
 
     public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, TEntity
@@ -115,11 +108,11 @@ public class PostgreSqlProcessRepository<TEntity> : IPersistenceProcessRepositor
         var updated = DateTime.UtcNow;
 
         var updatedCount = await _context.GetQuery<T>()
-            .Where(filter.Combine(x =>
+            .Where(x =>
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
-                && x.Attempt <= maxAttempts))
+                && x.Attempt <= maxAttempts)
             .Take(limit)
             .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
@@ -136,7 +129,7 @@ public class PostgreSqlProcessRepository<TEntity> : IPersistenceProcessRepositor
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
 
-        return result;
+        return result.Where(filter.Compile()).ToArray();
     }
 
     public Task SetProcessedData<T>(Guid correlationId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, TEntity

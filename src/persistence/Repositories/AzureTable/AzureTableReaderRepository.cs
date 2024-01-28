@@ -1,8 +1,5 @@
 ﻿using Azure.Data.Tables;
 
-using Microsoft.Extensions.Logging;
-
-using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
@@ -11,14 +8,11 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
-public class AzureTableReaderRepository<TEntity> : IPersistenceReaderRepository<TEntity> where TEntity : IPersistent, ITableEntity
+public class AzureTableReaderRepository<TContext, TEntity>(TContext context) : IPersistenceReaderRepository<TEntity>
+    where TContext : AzureTableContext
+    where TEntity : IPersistent, ITableEntity
 {
-    private readonly AzureTableContext _context;
-    public AzureTableReaderRepository(ILogger<AzureTableReaderRepository<TEntity>> logger, AzureTableContext context)
-    {
-        _context = context;
-        logger.Warn(nameof(AzureTableReaderRepository<TEntity>) + ' ' + GetHashCode());
-    }
+    private readonly TContext _context = context;
 
     public Task<bool> IsExists<T>(PersistenceQueryOptions<T> options, CancellationToken cToken = default) where T : class, TEntity =>
         _context.IsExists(options, cToken);

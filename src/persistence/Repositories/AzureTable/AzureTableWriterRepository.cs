@@ -3,7 +3,6 @@
 using Microsoft.Extensions.Logging;
 
 using Net.Shared.Abstractions.Models.Data;
-using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -11,19 +10,19 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
-public class AzureTableWriterRepository<TEntity> : IPersistenceWriterRepository<TEntity> where TEntity : IPersistent, ITableEntity
+public class AzureTableWriterRepository<TContext, TEntity> : IPersistenceWriterRepository<TEntity>
+    where TContext : AzureTableContext
+    where TEntity : IPersistent, ITableEntity
 {
     private readonly ILogger _log;
-    private readonly AzureTableContext _context;
+    private readonly TContext _context;
 
     private readonly string _repository;
-    public AzureTableWriterRepository(ILogger<AzureTableWriterRepository<TEntity>> logger, AzureTableContext context)
+    public AzureTableWriterRepository(ILogger<AzureTableWriterRepository<TContext, TEntity>> logger, TContext context)
     {
         _log = logger;
         _context = context;
-        _repository = nameof(AzureTableWriterRepository<TEntity>) + ' ' + GetHashCode();
-
-        _log.Warn(_repository);
+        _repository = nameof(AzureTableWriterRepository<TContext, TEntity>) + ' ' + GetHashCode();
     }
 
     public Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
