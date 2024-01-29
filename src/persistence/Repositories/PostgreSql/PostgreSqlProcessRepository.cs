@@ -2,6 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using Net.Shared.Extensions.Expression;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities.Catalogs;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
@@ -36,25 +37,23 @@ public class PostgreSqlProcessRepository<TContext, TEntity>(TContext context) : 
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
-        var result = await _context.GetQuery<T>()
+        return await _context.GetQuery<T>()
             .Where(x =>
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
-
-        return result;
     }
     public async Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
         var updatedCount = await _context.GetQuery<T>()
-            .Where(x =>
+            .Where(filter.Combine(x =>
                 x.CorrelationId == null || x.CorrelationId == correlationId
                 && x.StepId == step.Id
-                && x.StatusId == (int)ProcessStatuses.Ready)
+                && x.StatusId == (int)ProcessStatuses.Ready))
             .Take(limit)
             .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
@@ -64,15 +63,13 @@ public class PostgreSqlProcessRepository<TContext, TEntity>(TContext context) : 
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
-        var result = await _context.GetQuery<T>()
-            .Where(x =>
+        return await _context.GetQuery<T>()
+            .Where(filter.Combine(x =>
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
-                && x.Updated == updated)
+                && x.Updated == updated))
             .ToArrayAsync(cToken);
-
-        return result.Where(filter.Compile()).ToArray();
     }
 
     public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, CancellationToken cToken) where T : class, TEntity
@@ -93,26 +90,24 @@ public class PostgreSqlProcessRepository<TContext, TEntity>(TContext context) : 
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
-        var result = await _context.GetQuery<T>()
+        return await _context.GetQuery<T>()
             .Where(x =>
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
                 && x.Updated == updated)
             .ToArrayAsync(cToken);
-
-        return result;
     }
     public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
         var updatedCount = await _context.GetQuery<T>()
-            .Where(x =>
+            .Where(filter.Combine(x =>
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && ((x.StatusId == (int)ProcessStatuses.Processing && x.Updated < updateTime) || x.StatusId == (int)ProcessStatuses.Error)
-                && x.Attempt <= maxAttempts)
+                && x.Attempt <= maxAttempts))
             .Take(limit)
             .OrderBy(x => x.Updated)
             .ExecuteUpdateAsync(x => x
@@ -121,15 +116,13 @@ public class PostgreSqlProcessRepository<TContext, TEntity>(TContext context) : 
                 .SetProperty(y => y.Updated, updated)
             , cToken);
 
-        var result = await _context.GetQuery<T>()
-            .Where(x =>
+        return await _context.GetQuery<T>()
+            .Where(filter.Combine(x =>
                 x.CorrelationId == correlationId
                 && x.StepId == step.Id
                 && x.StatusId == (int)ProcessStatuses.Processing
-                && x.Updated == updated)
+                && x.Updated == updated))
             .ToArrayAsync(cToken);
-
-        return result.Where(filter.Compile()).ToArray();
     }
 
     public Task SetProcessedData<T>(Guid correlationId, IPersistentProcessStep currentStep, IPersistentProcessStep? nextStep, IEnumerable<T> data, CancellationToken cToken) where T : class, TEntity

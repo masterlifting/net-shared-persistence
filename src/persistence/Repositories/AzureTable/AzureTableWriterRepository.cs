@@ -1,7 +1,5 @@
 ﻿using Azure.Data.Tables;
 
-using Microsoft.Extensions.Logging;
-
 using Net.Shared.Abstractions.Models.Data;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
@@ -10,20 +8,11 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.AzureTable;
 
-public class AzureTableWriterRepository<TContext, TEntity> : IPersistenceWriterRepository<TEntity>
+public class AzureTableWriterRepository<TContext, TEntity>(TContext context) : IPersistenceWriterRepository<TEntity>
     where TContext : AzureTableContext
     where TEntity : IPersistent, ITableEntity
 {
-    private readonly ILogger _log;
-    private readonly TContext _context;
-
-    private readonly string _repository;
-    public AzureTableWriterRepository(ILogger<AzureTableWriterRepository<TContext, TEntity>> logger, TContext context)
-    {
-        _log = logger;
-        _context = context;
-        _repository = nameof(AzureTableWriterRepository<TContext, TEntity>) + ' ' + GetHashCode();
-    }
+    private readonly TContext _context = context;
 
     public Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
     {

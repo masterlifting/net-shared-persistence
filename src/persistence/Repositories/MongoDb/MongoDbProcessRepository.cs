@@ -44,7 +44,7 @@ public class MongoDbProcessRepository<TContext, TEntity>(TContext context) : IPe
             x.Updated = updated;
         }
     }
-    public async Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
+    public Task<T[]> GetProcessableData<T>(Guid correlationId, IPersistentProcessStep step, int limit, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
@@ -52,18 +52,16 @@ public class MongoDbProcessRepository<TContext, TEntity>(TContext context) : IPe
         {
             QueryOptions = new()
             {
-                Filter = x =>
+                Filter = filter.Combine(x =>
                     x.CorrelationId == null || x.CorrelationId == correlationId
                     && x.StepId == step.Id
-                    && x.StatusId == (int)ProcessStatuses.Ready,
+                    && x.StatusId == (int)ProcessStatuses.Ready),
                 Take = limit,
                 OrderBy = x => x.Updated
             }
         };
 
-        var result = await _context.Update(options, cToken);
-
-        return result.Where(filter.Compile()).ToArray();
+        return _context.Update(options, cToken);
 
         void Update(T x)
         {
@@ -101,7 +99,7 @@ public class MongoDbProcessRepository<TContext, TEntity>(TContext context) : IPe
             x.Updated = updated;
         }
     }
-    public async Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
+    public Task<T[]> GetUnprocessedData<T>(Guid correlationId, IPersistentProcessStep step, int limit, DateTime updateTime, int maxAttempts, Expression<Func<T, bool>> filter, CancellationToken cToken) where T : class, TEntity
     {
         var updated = DateTime.UtcNow;
 
@@ -119,9 +117,7 @@ public class MongoDbProcessRepository<TContext, TEntity>(TContext context) : IPe
             }
         };
 
-        var result = await _context.Update(options, cToken);
-
-        return result.Where(filter.Compile()).ToArray();
+        return _context.Update(options, cToken);
 
         void Update(T x)
         {

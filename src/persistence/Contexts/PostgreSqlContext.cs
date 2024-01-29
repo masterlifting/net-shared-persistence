@@ -10,21 +10,18 @@ namespace Net.Shared.Persistence.Contexts;
 
 public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersistentSql>
 {
-    private readonly ILoggerFactory _loggerFactory;
     private readonly PostgreSqlConnectionSettings _connectionSettings;
     private bool _isExternalTransaction;
 
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentSql => Set<T>();
 
-    protected PostgreSqlContext(ILoggerFactory loggerFactory, PostgreSqlConnectionSettings connectionSettings)
+    protected PostgreSqlContext(ILogger _, PostgreSqlConnectionSettings connectionSettings)
     {
-        _loggerFactory = loggerFactory;
         _connectionSettings = connectionSettings;
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
-        builder.UseLoggerFactory(_loggerFactory);
         builder.UseNpgsql(_connectionSettings.ConnectionString);
         base.OnConfiguring(builder);
     }

@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-using Net.Shared.Extensions.Logging;
-using Net.Shared.Abstractions.Models.Data;
+﻿using Net.Shared.Abstractions.Models.Data;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
 using Net.Shared.Persistence.Contexts;
@@ -9,27 +6,14 @@ using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 
 namespace Net.Shared.Persistence.Repositories.PostgreSql;
 
-public class PostgreSqlWriterRepository<TContext, TEntity> : IPersistenceWriterRepository<TEntity>
+public class PostgreSqlWriterRepository<TContext, TEntity>(TContext context) : IPersistenceWriterRepository<TEntity>
     where TContext : PostgreSqlContext
     where TEntity : IPersistentSql
 {
-    private readonly ILogger _log;
-    private readonly TContext _context;
+    private readonly TContext _context = context;
 
-    private readonly string _repository;
-    public PostgreSqlWriterRepository(ILogger<PostgreSqlWriterRepository<TContext, TEntity>> logger, TContext context)
-    {
-        _log = logger;
-        _context = context;
-        _repository = nameof(PostgreSqlWriterRepository<TContext, TEntity>) + ' ' + GetHashCode();
-    }
-
-    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
-    {
-        await _context.CreateOne(entity, cToken);
-
-        _log.Debug($"<Created by '{_repository}'.");
-    }
+    public Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity => 
+        _context.CreateOne(entity, cToken);
     public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -43,12 +27,8 @@ public class PostgreSqlWriterRepository<TContext, TEntity> : IPersistenceWriterR
         }
     }
 
-    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
-    {
-        await _context.CreateMany(entities, cToken);
-
-        _log.Debug($"<Created by '{_repository}'. Count: {entities.Count}.");
-    }
+    public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity => 
+        _context.CreateMany(entities, cToken);
     public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -62,14 +42,8 @@ public class PostgreSqlWriterRepository<TContext, TEntity> : IPersistenceWriterR
         }
     }
 
-    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, TEntity
-    {
-        var entities = await _context.Update(options, cToken);
-
-        _log.Debug($"<Updated by '{_repository}'. Count: {entities.Length}.");
-
-        return entities;
-    }
+    public Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, TEntity => 
+        _context.Update(options, cToken);
     public async Task<Result<T>> TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -83,14 +57,8 @@ public class PostgreSqlWriterRepository<TContext, TEntity> : IPersistenceWriterR
         }
     }
 
-    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity
-    {
-        var count = await _context.Delete(options, cToken);
-
-        _log.Debug($"<Deleted by '{_repository}'. Count: {count}.");
-
-        return count;
-    }
+    public Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity => 
+        _context.Delete(options, cToken);
     public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -105,40 +73,16 @@ public class PostgreSqlWriterRepository<TContext, TEntity> : IPersistenceWriterR
     }
 
     #region Specialized API
-    
-    public Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
-    {
-        var result = _context.UpdateOne(entity, cToken);
 
-        _log.Debug($"<Updated by '{_repository}'.");
+    public Task UpdateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity => 
+        _context.UpdateOne(entity, cToken);
+    public Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, TEntity => 
+        _context.UpdateMany(entities, cToken);
 
-        return result;
-    }
-    public Task UpdateMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, TEntity
-    {
-        var result = _context.UpdateMany(entities, cToken);
-        
-        _log.Debug($"<Updated by '{_repository}'. Count: {entities.Count()}.");
-        
-        return result;
-    }
+    public Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, TEntity => 
+        _context.DeleteOne(entity, cToken);
+    public Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, TEntity => 
+        _context.DeleteMany(entities, cToken);
 
-    public Task DeleteOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
-    {
-        var result = _context.DeleteOne(entity, cToken);
-        
-        _log.Debug($"<Deleted by '{_repository}'.");
-        
-        return result;
-    }
-    public Task DeleteMany<T>(IEnumerable<T> entities, CancellationToken cToken) where T : class, TEntity
-    {
-        var result = _context.DeleteMany(entities, cToken);
-        
-        _log.Debug($"<Deleted by ' {_repository}'. Count: {entities.Count()}.");
-        
-        return result;
-    }
-    
     #endregion
 }

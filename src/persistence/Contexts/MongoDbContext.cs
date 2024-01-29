@@ -8,7 +8,6 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-using Net.Shared.Extensions.Logging;
 using Net.Shared.Persistence.Abstractions.Interfaces.Contexts;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -25,17 +24,32 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
 
     private readonly SemaphoreSlim _semaphore = new(1);
 
-    private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
+    private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql
+    {
+        IMongoCollection<T> collection;
+
+        if (_semaphore.CurrentCount != 0)
+        {
+            _semaphore.Wait();
+            collection = _dataBase.GetCollection<T>(typeof(T).Name);
+            _semaphore.Release();
+        }
+        else
+        {
+            collection = _dataBase.GetCollection<T>(typeof(T).Name);
+        }
+
+        return collection;
+    }
+
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
-    protected MongoDbContext(ILogger logger, MongoDbConnectionSettings connectionSettings)
+    protected MongoDbContext(ILogger _, MongoDbConnectionSettings connectionSettings)
     {
         _client = new MongoClient(connectionSettings.ConnectionString);
         _dataBase = _client.GetDatabase(connectionSettings.Database);
 
         OnModelCreating(new MongoDbBuilder(_dataBase));
-
-        logger.Warn(nameof(MongoDbContext) + ' ' + GetHashCode());
     }
 
     public abstract void OnModelCreating(MongoDbBuilder builder);

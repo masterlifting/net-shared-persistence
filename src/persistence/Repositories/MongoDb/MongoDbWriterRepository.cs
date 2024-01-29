@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-using Net.Shared.Abstractions.Models.Data;
-using Net.Shared.Extensions.Logging;
+﻿using Net.Shared.Abstractions.Models.Data;
 using Net.Shared.Persistence.Abstractions.Interfaces.Entities;
 using Net.Shared.Persistence.Abstractions.Interfaces.Repositories;
 using Net.Shared.Persistence.Abstractions.Models.Contexts;
@@ -9,27 +6,14 @@ using Net.Shared.Persistence.Contexts;
 
 namespace Net.Shared.Persistence.Repositories.MongoDb;
 
-public class MongoDbWriterRepository<TContext, TEntity> : IPersistenceWriterRepository<TEntity> 
+public class MongoDbWriterRepository<TContext, TEntity>(TContext context) : IPersistenceWriterRepository<TEntity> 
     where TContext : MongoDbContext
     where TEntity : IPersistentNoSql
 {
-    private readonly ILogger _log;
-    private readonly TContext _context;
+    private readonly TContext _context = context;
 
-    private readonly string _repository;
-    public MongoDbWriterRepository(ILogger<MongoDbWriterRepository<TContext, TEntity>> logger, TContext context)
-    {
-        _log = logger;
-        _context = context;
-        _repository = nameof(MongoDbWriterRepository<TContext, TEntity>) + ' ' + GetHashCode();
-    }
-
-    public async Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
-    {
-        await _context.CreateOne(entity, cToken);
-
-        _log.Debug($"<Created by '{_repository}'.");
-    }
+    public Task CreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity => 
+        _context.CreateOne(entity, cToken);
     public async Task<Result<T>> TryCreateOne<T>(T entity, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -43,12 +27,8 @@ public class MongoDbWriterRepository<TContext, TEntity> : IPersistenceWriterRepo
         }
     }
 
-    public async Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
-    {
-        await _context.CreateMany(entities, cToken);
-
-        _log.Debug($"<Created by '{_repository}'. Count: {entities.Count}.");
-    }
+    public Task CreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity => 
+        _context.CreateMany(entities, cToken);
     public async Task<Result<T>> TryCreateMany<T>(IReadOnlyCollection<T> entities, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -62,14 +42,8 @@ public class MongoDbWriterRepository<TContext, TEntity> : IPersistenceWriterRepo
         }
     }
 
-    public async Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, TEntity
-    {
-        var entities = await _context.Update(options, cToken);
-
-        _log.Debug($"<Updated by '{_repository}'. Count: {entities.Length}.");
-
-        return entities;
-    }
+    public Task<T[]> Update<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, TEntity => 
+        _context.Update(options, cToken);
     public async Task<Result<T>> TryUpdate<T>(PersistenceUpdateOptions<T> options, CancellationToken cToken) where T : class, TEntity
     {
         try
@@ -83,14 +57,8 @@ public class MongoDbWriterRepository<TContext, TEntity> : IPersistenceWriterRepo
         }
     }
 
-    public async Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity
-    {
-        var count = await _context.Delete(options, cToken);
-
-        _log.Debug($"<Deleted by '{_repository}'. Count: {count}.");
-
-        return count;
-    }
+    public Task<long> Delete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity => 
+        _context.Delete(options, cToken);
     public async Task<Result<long>> TryDelete<T>(PersistenceQueryOptions<T> options, CancellationToken cToken) where T : class, TEntity
     {
         try
