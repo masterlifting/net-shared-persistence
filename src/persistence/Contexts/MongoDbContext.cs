@@ -20,28 +20,21 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     private readonly IMongoDatabase _dataBase;
     private readonly MongoClient _client;
     private IClientSessionHandle? _session;
-    private bool _isExternalTransaction;
 
-    private readonly SemaphoreSlim _semaphore = new(1);
-
-    private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql
+    private int _isExternalTransactionValue = 0;
+    private bool IsExternalTransaction
     {
-        IMongoCollection<T> collection;
-
-        if (_semaphore.CurrentCount != 0)
+        get  => Interlocked.CompareExchange(ref _isExternalTransactionValue, 1, 1) == 1; 
+        set
         {
-            _semaphore.Wait();
-            collection = _dataBase.GetCollection<T>(typeof(T).Name);
-            _semaphore.Release();
+            if (value)
+                Interlocked.CompareExchange(ref _isExternalTransactionValue, 1, 0);
+            else
+                Interlocked.CompareExchange(ref _isExternalTransactionValue, 0, 1);
         }
-        else
-        {
-            collection = _dataBase.GetCollection<T>(typeof(T).Name);
-        }
-
-        return collection;
     }
 
+    private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
     protected MongoDbContext(ILogger _, MongoDbConnectionSettings connectionSettings)
@@ -102,9 +95,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     {
         try
         {
-            await _semaphore.WaitAsync(cToken);
-
-            if (!_isExternalTransaction && _session is null)
+            if (!IsExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
@@ -142,26 +133,22 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
                 _ = await collection.ReplaceOneAsync(_session, updateFilter, document, replaceOptions, cToken);
             }
 
-            if (!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!IsExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
 
             return documents;
         }
         catch
         {
-            if (!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!IsExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
-
-            _semaphore.Release();
 
             throw;
         }
         finally
         {
-            if (!_isExternalTransaction)
+            if (!IsExternalTransaction)
                 Dispose();
-
-            _semaphore.Release();
         }
     }
 
@@ -169,9 +156,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     {
         try
         {
-            await _semaphore.WaitAsync(cToken);
-
-            if (!_isExternalTransaction && _session is null)
+            if (!IsExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
@@ -199,26 +184,22 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
                 await collection.DeleteOneAsync(_session, options.Filter, deleteOptions, cToken);
             }
 
-            if (!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!IsExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
 
             return documents.Length;
         }
         catch
         {
-            if (!_isExternalTransaction && _session?.IsInTransaction is true)
+            if (!IsExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
-
-            _semaphore.Release();
 
             throw;
         }
         finally
         {
-            if (!_isExternalTransaction)
+            if (!IsExternalTransaction)
                 Dispose();
-
-            _semaphore.Release();
         }
     }
 
@@ -229,7 +210,8 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
 
         _session = await _client.StartSessionAsync(null, cToken);
         _session.StartTransaction();
-        _isExternalTransaction = true;
+
+        IsExternalTransaction = true;
     }
     public async Task CommitTransaction(CancellationToken cToken)
     {
@@ -246,7 +228,8 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
         }
         finally
         {
-            _isExternalTransaction = false;
+            IsExternalTransaction = false;
+
             Dispose();
         }
     }
@@ -265,7 +248,7 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
         }
         finally
         {
-            _isExternalTransaction = false;
+            IsExternalTransaction = false;
             Dispose();
         }
     }
@@ -276,10 +259,9 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
         _session = null;
     }
 }
-public sealed class MongoDbBuilder
+public sealed class MongoDbBuilder(IMongoDatabase database)
 {
-    private readonly IMongoDatabase _database;
-    public MongoDbBuilder(IMongoDatabase database) => _database = database;
+    private readonly IMongoDatabase _database = database;
 
     public IMongoCollection<T> SetCollection<T>(CreateCollectionOptions? options = null) where T : class, IPersistent, IPersistentNoSql
     {

@@ -11,7 +11,19 @@ namespace Net.Shared.Persistence.Contexts;
 public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersistentSql>
 {
     private readonly PostgreSqlConnectionSettings _connectionSettings;
-    private bool _isExternalTransaction;
+    
+    private int _isExternalTransactionValue = 0;
+    private bool IsExternalTransaction
+    {
+        get => Interlocked.CompareExchange(ref _isExternalTransactionValue, 1, 1) == 1;
+        set
+        {
+            if (value)
+                Interlocked.CompareExchange(ref _isExternalTransactionValue, 1, 0);
+            else
+                Interlocked.CompareExchange(ref _isExternalTransactionValue, 0, 1);
+        }
+    }
 
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentSql => Set<T>();
 
@@ -111,7 +123,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
     {
         try
         {
-            if (!_isExternalTransaction && Database.CurrentTransaction is null)
+            if (!IsExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
             T[] entities;
@@ -137,7 +149,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
 
             await SaveChangesAsync(cToken);
 
-            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+            if (!IsExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.CommitAsync(cToken);
 
             return entities;
@@ -151,7 +163,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
         }
         finally
         {
-            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+            if (!IsExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
@@ -160,7 +172,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
     {
         try
         {
-            if (!_isExternalTransaction && Database.CurrentTransaction is null)
+            if (!IsExternalTransaction && Database.CurrentTransaction is null)
                 await Database.BeginTransactionAsync(cToken);
 
             var query = GetQuery<T>();
@@ -174,7 +186,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
 
             await DeleteMany(entities, cToken);
 
-            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+            if (!IsExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.CommitAsync(cToken);
 
             return entities.Length;
@@ -188,7 +200,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
         }
         finally
         {
-            if (!_isExternalTransaction && Database.CurrentTransaction is not null)
+            if (!IsExternalTransaction && Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
         }
     }
@@ -201,7 +213,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
         }
         else
         {
-            _isExternalTransaction = true;
+            IsExternalTransaction = true;
             return Database.BeginTransactionAsync(cToken);
         }
     }
@@ -220,7 +232,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
         }
         finally
         {
-            _isExternalTransaction = false;
+            IsExternalTransaction = false;
 
             if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
@@ -241,7 +253,7 @@ public abstract class PostgreSqlContext : DbContext, IPersistenceContext<IPersis
         }
         finally
         {
-            _isExternalTransaction = false;
+            IsExternalTransaction = false;
 
             if (Database.CurrentTransaction is not null)
                 await Database.CurrentTransaction.DisposeAsync();
