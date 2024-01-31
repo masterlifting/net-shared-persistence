@@ -4,6 +4,16 @@ namespace Net.Shared.Persistence.Abstractions.Models.Contexts;
 
 public sealed record PersistenceQueryOptions<T> where T : class
 {
+    public PersistenceQueryOptions()
+    {
+        
+    }
+
+    public PersistenceQueryOptions(Expression<Func<T, bool>> filter)
+    {
+        Filter = filter;
+    }
+
     public Expression<Func<T, bool>> Filter { get; set; } = _ => true;
     public Expression<Func<T, object>>? OrderBy { get; set; }
     public int? Take { get; set; }
