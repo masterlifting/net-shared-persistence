@@ -21,20 +21,25 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     private readonly MongoClient _client;
     private IClientSessionHandle? _session;
 
-    private int _isExternalTransactionValue = 0;
-    private bool IsExternalTransaction
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+
+    private bool _isExternalTransaction;
+
+    private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql
     {
-        get  => Interlocked.CompareExchange(ref _isExternalTransactionValue, 1, 1) == 1; 
-        set
+        if (_semaphore.CurrentCount != 0)
         {
-            if (value)
-                Interlocked.CompareExchange(ref _isExternalTransactionValue, 1, 0);
-            else
-                Interlocked.CompareExchange(ref _isExternalTransactionValue, 0, 1);
+            _semaphore.Wait();
+            var result = _dataBase.GetCollection<T>(typeof(T).Name);
+            _semaphore.Release();
+            return result;
+        }
+        else
+        {
+            return _dataBase.GetCollection<T>(typeof(T).Name);
         }
     }
 
-    private IMongoCollection<T> GetCollection<T>() where T : class, IPersistent, IPersistentNoSql => _dataBase.GetCollection<T>(typeof(T).Name);
     public IQueryable<T> GetQuery<T>() where T : class, IPersistent, IPersistentNoSql => GetCollection<T>().AsQueryable();
 
     protected MongoDbContext(ILogger _, MongoDbConnectionSettings connectionSettings)
@@ -95,7 +100,9 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     {
         try
         {
-            if (!IsExternalTransaction && _session is null)
+            await _semaphore.WaitAsync(cToken);
+
+            if (!_isExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
@@ -133,22 +140,24 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
                 _ = await collection.ReplaceOneAsync(_session, updateFilter, document, replaceOptions, cToken);
             }
 
-            if (!IsExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
 
             return documents;
         }
         catch
         {
-            if (!IsExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
             throw;
         }
         finally
         {
-            if (!IsExternalTransaction)
+            if (!_isExternalTransaction)
                 Dispose();
+
+            _semaphore.Release();
         }
     }
 
@@ -156,7 +165,9 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
     {
         try
         {
-            if (!IsExternalTransaction && _session is null)
+            await _semaphore.WaitAsync(cToken);
+
+            if (!_isExternalTransaction && _session is null)
             {
                 _session = await _client.StartSessionAsync(null, cToken);
                 _session.StartTransaction();
@@ -184,42 +195,53 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
                 await collection.DeleteOneAsync(_session, options.Filter, deleteOptions, cToken);
             }
 
-            if (!IsExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.CommitTransactionAsync(cToken);
 
             return documents.Length;
         }
         catch
         {
-            if (!IsExternalTransaction && _session?.IsInTransaction is true)
+            if (!_isExternalTransaction && _session?.IsInTransaction is true)
                 await _session.AbortTransactionAsync(cToken);
 
             throw;
         }
         finally
         {
-            if (!IsExternalTransaction)
+            if (!_isExternalTransaction)
                 Dispose();
+
+            _semaphore.Release();
         }
     }
 
     public async Task StartTransaction(CancellationToken cToken)
     {
+        await _semaphore.WaitAsync(cToken);
+
         if (_session?.IsInTransaction is true)
+        {
+            _semaphore.Release();
             return;
+        }
 
         _session = await _client.StartSessionAsync(null, cToken);
         _session.StartTransaction();
 
-        IsExternalTransaction = true;
+        _isExternalTransaction = true;
+
+        _semaphore.Release();
     }
     public async Task CommitTransaction(CancellationToken cToken)
     {
-        if (_session?.IsInTransaction != true)
-            throw new InvalidOperationException("The transaction session was not found");
-
         try
         {
+            await _semaphore.WaitAsync(cToken);
+
+            if (_session?.IsInTransaction != true)
+                throw new InvalidOperationException("The transaction session was not found");
+
             await _session.CommitTransactionAsync(cToken);
         }
         catch
@@ -228,15 +250,22 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
         }
         finally
         {
-            IsExternalTransaction = false;
+            _isExternalTransaction = false;
 
             Dispose();
+
+            _semaphore.Release();
         }
     }
     public async Task RollbackTransaction(CancellationToken cToken)
     {
+        await _semaphore.WaitAsync(cToken);
+
         if (_session?.IsInTransaction != true)
+        {
+            _semaphore.Release();
             return;
+        }
 
         try
         {
@@ -248,8 +277,10 @@ public abstract class MongoDbContext : IPersistenceContext<IPersistentNoSql>
         }
         finally
         {
-            IsExternalTransaction = false;
+            _isExternalTransaction = false;
             Dispose();
+
+            _semaphore.Release();
         }
     }
 
