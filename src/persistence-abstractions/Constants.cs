@@ -13,5 +13,15 @@ public static class Constants
             Processed,
             Completed
         }
+
+        public static readonly Dictionary<int, string> ProcessStatusesMap = new()
+        {
+            { (int)ProcessStatuses.Error, "Error" },
+            { (int)ProcessStatuses.Draft, "Draft" },
+            { (int)ProcessStatuses.Ready, "Ready" },
+            { (int)ProcessStatuses.Processing, "Processing" },
+            { (int)ProcessStatuses.Processed, "Processed" },
+            { (int)ProcessStatuses.Completed, "Completed" }
+        };
     }
 }
